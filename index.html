@@ -45,12 +45,22 @@
             <button id="nextLevelBtn">下一关</button>
         </div>
         
+        <!-- 游戏通关界面：当玩家完成第10关时显示 -->
+        <div id="gameComplete" class="hidden">
+            <h2>🎉 游戏通关! 🎉</h2>
+            <p>恭喜你完成了所有关卡!</p>
+            <p>最终得分: <span id="finalScoreComplete">0</span></p>
+            <!-- 重新开始游戏按钮 -->
+            <button id="gameCompleteRestartBtn">重新开始</button>
+        </div>
+        
         <!-- 游戏开始界面：初始显示的游戏菜单 -->
         <div id="startScreen">
             <!-- 游戏标题 -->
             <h1>闪电战机</h1>
             <!-- 游戏操作说明 -->
-            <p>使用方向键移动，空格键发射大招</p>
+            <p>使用方向键或WASD移动，空格键发射大招</p>
+            <p>支持PS5手柄：左摇杆移动，右扳机发射大招</p>
             <!-- 开始游戏按钮 -->
             <button id="startBtn">开始游戏</button>
         </div>

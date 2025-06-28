@@ -14,7 +14,7 @@ class Game {
         this.width = this.canvas.width;  // 画布宽度
         this.height = this.canvas.height; // 画布高度
         
-        // 游戏状态管理：start(开始界面), playing(游戏中), paused(暂停), gameOver(游戏结束), levelComplete(关卡完成)
+        // 游戏状态管理：start(开始界面), playing(游戏中), paused(暂停), gameOver(游戏结束), levelComplete(关卡完成), gameComplete(游戏通关)
         this.gameState = 'start';
         
         // 游戏核心数据
@@ -33,6 +33,8 @@ class Game {
         
         // 输入控制
         this.keys = {};            // 按键状态对象
+        this.gamepad = null;       // 手柄对象
+        this.gamepadConnected = false; // 手柄连接状态
         
         // 时间控制变量
         this.lastShot = 0;         // 上次射击时间
@@ -60,7 +62,7 @@ class Game {
     
     /**
      * 设置游戏事件监听器
-     * 监听键盘输入和按钮点击事件
+     * 监听键盘输入、手柄输入和按钮点击事件
      */
     setupEventListeners() {
         // 键盘按下事件监听
@@ -76,6 +78,20 @@ class Game {
             this.keys[e.code] = false; // 记录按键状态为释放
         });
         
+        // 手柄连接事件监听
+        window.addEventListener('gamepadconnected', (e) => {
+            console.log('手柄已连接:', e.gamepad);
+            this.gamepadConnected = true;
+            this.gamepad = e.gamepad;
+        });
+        
+        // 手柄断开连接事件监听
+        window.addEventListener('gamepaddisconnected', (e) => {
+            console.log('手柄已断开连接:', e.gamepad);
+            this.gamepadConnected = false;
+            this.gamepad = null;
+        });
+        
         // 开始游戏按钮点击事件
         document.getElementById('startBtn').addEventListener('click', () => {
             this.startGame();
@@ -89,6 +105,11 @@ class Game {
         // 下一关按钮点击事件
         document.getElementById('nextLevelBtn').addEventListener('click', () => {
             this.nextLevel();
+        });
+        
+        // 游戏通关重新开始按钮点击事件
+        document.getElementById('gameCompleteRestartBtn').addEventListener('click', () => {
+            this.restartGame();
         });
     }
     
@@ -174,6 +195,12 @@ class Game {
                 enemies: ['fighter', 'bomber', 'scout', 'interceptor', 'gunship', 'destroyer', 'carrier', 'battleship', 'dreadnought', 'titan'], 
                 spawnRate: 35, 
                 enemySpeed: 2.5 
+            },
+            // 第11关：游戏通关关卡（特殊关卡，用于触发通关界面）
+            11: { 
+                enemies: ['fighter'], 
+                spawnRate: 1000, 
+                enemySpeed: 1.0 
             }
         };
     }
@@ -198,22 +225,36 @@ class Game {
         this.lives = 5;        // 重置生命值
         this.powerLevel = 1;   // 重置火力等级
         this.gameState = 'playing';  // 设置游戏状态为进行中
-        this.resetLevel();     // 重置当前关卡
-        this.updateUI();       // 更新界面显示
-        document.getElementById('gameOver').classList.add('hidden');  // 隐藏游戏结束界面
+        
+        // 隐藏所有界面
+        document.getElementById('startScreen').classList.add('hidden');
+        document.getElementById('gameOver').classList.add('hidden');
+        document.getElementById('levelComplete').classList.add('hidden');
+        document.getElementById('gameComplete').classList.add('hidden');
+        
+        this.resetLevel();  // 重置当前关卡
     }
     
     /**
      * 进入下一关方法
-     * 增加关卡数和火力等级，重置关卡数据
+     * 增加关卡数并重置关卡状态
      */
     nextLevel() {
-        this.level++;          // 关卡数加1
-        this.powerLevel++;     // 火力等级加1
-        this.gameState = 'playing';  // 设置游戏状态为进行中
-        this.resetLevel();     // 重置当前关卡
-        this.updateUI();       // 更新界面显示
-        document.getElementById('levelComplete').classList.add('hidden');  // 隐藏关卡完成界面
+        this.level++;  // 关卡数加1
+        this.levelEnemiesKilled = 0;  // 重置关卡击杀数
+        
+        // 隐藏关卡完成界面
+        document.getElementById('levelComplete').classList.add('hidden');
+        
+        if (this.level <= 10) {
+            // 正常进入下一关
+            this.gameState = 'playing';
+            this.resetLevel();
+        } else {
+            // 第10关后显示游戏通关
+            this.gameState = 'gameComplete';
+            document.getElementById('gameComplete').classList.remove('hidden');
+        }
     }
     
     /**
@@ -226,27 +267,24 @@ class Game {
         this.enemyBullets = [];        // 清空敌人子弹数组
         this.explosions = [];          // 清空爆炸效果数组
         this.powerUps = [];            // 清空道具数组
-        this.levelEnemiesKilled = 0;   // 重置当前关卡击杀敌人数
         this.enemySpawnTimer = 0;      // 重置敌人生成计时器
         this.createPlayer();           // 重新创建玩家对象
     }
     
     /**
-     * 创建敌人对象
-     * 根据敌人类型创建具有不同属性的敌人
-     * @param {string} type - 敌人类型（fighter, bomber, scout等）
-     * @returns {Object} 敌人对象
+     * 创建敌人方法
+     * 根据敌人类型创建具有不同属性的敌人对象
      */
     createEnemy(type) {
-        // 敌人类型配置：定义每种敌人的属性
+        // 敌人类型配置：定义不同敌人的属性
         const enemyTypes = {
-            fighter: { width: 30, height: 30, health: 15, speed: 2, color: '#ff6b6b', points: 10, fireRate: 200 },      // 战斗机：基础敌人
-            bomber: { width: 40, height: 35, health: 25, speed: 1.5, color: '#ff8e53', points: 20, fireRate: 150 },     // 轰炸机：血量较高
-            scout: { width: 25, height: 25, health: 10, speed: 3, color: '#ffd93d', points: 15, fireRate: 250 },        // 侦察机：速度快
-            interceptor: { width: 35, height: 30, health: 20, speed: 2.5, color: '#6bcf7f', points: 25, fireRate: 180 }, // 拦截机：平衡型
-            gunship: { width: 45, height: 40, health: 35, speed: 1, color: '#a8e6cf', points: 35, fireRate: 120 },       // 炮舰：高血量，慢速
-            destroyer: { width: 50, height: 45, health: 45, speed: 1.2, color: '#dcedc1', points: 50, fireRate: 100 },   // 驱逐舰：更强
-            carrier: { width: 60, height: 50, health: 60, speed: 0.8, color: '#ffd3b6', points: 75, fireRate: 80 },      // 航母：大型敌人
+            fighter: { width: 30, height: 25, health: 20, speed: 1.2, color: '#ff6b6b', points: 10, fireRate: 120 },    // 战斗机：基础敌人
+            bomber: { width: 35, height: 30, health: 30, speed: 0.8, color: '#ff8e8e', points: 15, fireRate: 100 },    // 轰炸机：血量较高
+            scout: { width: 25, height: 20, health: 15, speed: 1.8, color: '#ffa5a5', points: 8, fireRate: 80 },       // 侦察机：速度快
+            interceptor: { width: 32, height: 28, health: 25, speed: 1.5, color: '#ffb5b5', points: 12, fireRate: 90 }, // 拦截机：平衡型
+            gunship: { width: 40, height: 35, health: 40, speed: 0.6, color: '#ffc5c5', points: 20, fireRate: 110 },   // 炮舰：重型敌人
+            destroyer: { width: 50, height: 40, health: 50, speed: 0.7, color: '#ffd5d5', points: 30, fireRate: 80 },  // 驱逐舰：强力敌人
+            carrier: { width: 60, height: 45, health: 60, speed: 0.5, color: '#ffe5e5', points: 50, fireRate: 90 },   // 航母：超重型敌人
             battleship: { width: 70, height: 55, health: 75, speed: 0.6, color: '#ffaaa5', points: 100, fireRate: 70 },  // 战列舰：超强
             dreadnought: { width: 80, height: 60, health: 100, speed: 0.5, color: '#ff8b94', points: 150, fireRate: 60 }, // 无畏舰：终极敌人
             titan: { width: 90, height: 65, health: 150, speed: 0.4, color: '#ff6b9d', points: 250, fireRate: 50 }        // 泰坦：Boss级敌人
@@ -254,6 +292,25 @@ class Game {
         
         const config = enemyTypes[type];  // 获取敌人配置
         const currentLevel = this.levelData[this.level];  // 获取当前关卡配置
+        
+        // 如果没有关卡数据，使用默认配置
+        if (!currentLevel) {
+            return {
+                x: Math.random() * (this.width - config.width),
+                y: -config.height,
+                width: config.width,
+                height: config.height,
+                health: config.health,
+                maxHealth: config.health,
+                speed: config.speed,
+                color: config.color,
+                points: config.points,
+                fireRate: config.fireRate,
+                lastShot: 0,
+                type: type
+            };
+        }
+        
         const speedMultiplier = currentLevel.enemySpeed;  // 获取速度倍数
         
         // 创建并返回敌人对象
@@ -279,6 +336,10 @@ class Game {
      */
     spawnEnemy() {
         const currentLevel = this.levelData[this.level];  // 获取当前关卡配置
+        
+        // 如果没有关卡数据，不生成敌人
+        if (!currentLevel) return;
+        
         const enemyTypes = currentLevel.enemies;          // 获取可用的敌人类型
         const randomType = enemyTypes[Math.floor(Math.random() * enemyTypes.length)];  // 随机选择敌人类型
         this.enemies.push(this.createEnemy(randomType));  // 创建敌人并添加到数组
@@ -290,6 +351,10 @@ class Game {
      */
     spawnEnemies() {
         const currentLevel = this.levelData[this.level];  // 获取当前关卡配置
+        
+        // 如果没有关卡数据，不生成敌人
+        if (!currentLevel) return;
+        
         this.enemySpawnTimer++;                           // 增加敌人生成计时器
         
         // 检查是否到了生成敌人的时间
@@ -319,33 +384,97 @@ class Game {
     
     /**
      * 更新玩家状态
-     * 处理玩家移动、射击等操作
+     * 处理玩家移动、射击和特殊技能
      */
     updatePlayer() {
-        // 移动控制：根据按键状态移动玩家
-        if (this.keys['ArrowLeft'] && this.player.x > 0) {
-            this.player.x -= this.player.speed;  // 向左移动
+        if (this.gameState !== 'playing') return;  // 只在游戏进行中更新玩家
+        
+        // 获取当前关卡数据
+        const currentLevelData = this.levelData[this.level];
+        if (!currentLevelData) return;  // 如果没有关卡数据，不更新
+        
+        // 键盘控制
+        let moveX = 0;
+        let moveY = 0;
+        
+        if (this.keys['ArrowLeft'] || this.keys['KeyA']) {
+            moveX -= this.player.speed;
         }
-        if (this.keys['ArrowRight'] && this.player.x < this.width - this.player.width) {
-            this.player.x += this.player.speed;  // 向右移动
+        if (this.keys['ArrowRight'] || this.keys['KeyD']) {
+            moveX += this.player.speed;
         }
-        if (this.keys['ArrowUp'] && this.player.y > 0) {
-            this.player.y -= this.player.speed;  // 向上移动
+        if (this.keys['ArrowUp'] || this.keys['KeyW']) {
+            moveY -= this.player.speed;
         }
-        if (this.keys['ArrowDown'] && this.player.y < this.height - this.player.height) {
-            this.player.y += this.player.speed;  // 向下移动
+        if (this.keys['ArrowDown'] || this.keys['KeyS']) {
+            moveY += this.player.speed;
         }
         
-        // 手动射击：按空格键射击
+        // 手柄控制
+        if (this.gamepadConnected && this.gamepad) {
+            // 更新手柄状态
+            this.gamepad = navigator.getGamepads()[this.gamepad.index];
+            
+            if (this.gamepad) {
+                // 左摇杆控制移动
+                const leftStickX = this.gamepad.axes[0];  // 左摇杆X轴
+                const leftStickY = this.gamepad.axes[1];  // 左摇杆Y轴
+                
+                // 添加死区，避免摇杆漂移
+                const deadzone = 0.1;
+                if (Math.abs(leftStickX) > deadzone) {
+                    moveX += leftStickX * this.player.speed * 2;
+                }
+                if (Math.abs(leftStickY) > deadzone) {
+                    moveY += leftStickY * this.player.speed * 2;
+                }
+                
+                // 十字键控制（备用）
+                if (this.gamepad.buttons[14]?.pressed) {  // 左
+                    moveX -= this.player.speed;
+                }
+                if (this.gamepad.buttons[15]?.pressed) {  // 右
+                    moveX += this.player.speed;
+                }
+                if (this.gamepad.buttons[12]?.pressed) {  // 上
+                    moveY -= this.player.speed;
+                }
+                if (this.gamepad.buttons[13]?.pressed) {  // 下
+                    moveY += this.player.speed;
+                }
+            }
+        }
+        
+        // 更新玩家位置
+        this.player.x += moveX;
+        this.player.y += moveY;
+        
+        // 边界检测：确保玩家不会移出屏幕
+        this.player.x = Math.max(0, Math.min(this.width - this.player.width, this.player.x));
+        this.player.y = Math.max(0, Math.min(this.height - this.player.height, this.player.y));
+        
+        // 自动射击
+        this.shoot();
+        
+        // 特殊射击（空格键或手柄右扳机）
+        const currentTime = Date.now();
+        const specialShotCooldown = 2000;  // 2秒冷却时间
+        
+        let shouldSpecialShot = false;
+        
+        // 键盘特殊射击
         if (this.keys['Space']) {
-            this.shoot();
+            shouldSpecialShot = true;
         }
         
-        // 自动射击：根据火力等级自动发射子弹
-        const now = Date.now();
-        if (now - this.lastShot > 200 - (this.powerLevel - 1) * 20) {  // 射击间隔随火力等级减少
-            this.shoot();
-            this.lastShot = now;
+        // 手柄特殊射击（右扳机）
+        if (this.gamepadConnected && this.gamepad && this.gamepad.buttons[7]?.pressed) {
+            shouldSpecialShot = true;
+        }
+        
+        if (shouldSpecialShot && currentTime - this.lastSpecialShot > specialShotCooldown) {
+            this.specialShot();
+            this.lastSpecialShot = currentTime;
         }
     }
     
@@ -354,22 +483,109 @@ class Game {
      * 根据火力等级发射不同数量的子弹
      */
     shoot() {
-        const bulletCount = Math.min(this.powerLevel, 5);  // 子弹数量等于火力等级，最多5发
-        const spread = (bulletCount - 1) * 10;             // 子弹之间的间距
-        
-        // 发射多颗子弹
-        for (let i = 0; i < bulletCount; i++) {
-            const offset = (i - (bulletCount - 1) / 2) * spread;  // 计算每颗子弹的水平偏移
-            this.bullets.push({
-                x: this.player.x + this.player.width / 2 - 2 + offset,  // 子弹水平位置
-                y: this.player.y,                                        // 子弹垂直位置
-                width: 4,                                                // 子弹宽度
-                height: 10,                                              // 子弹高度
-                speed: 8,                                                // 子弹速度
-                color: '#4a90e2',                                        // 子弹颜色（蓝色）
-                damage: 15 + (this.powerLevel - 1) * 8                  // 子弹伤害随火力等级增加
-            });
+        const now = Date.now();
+        if (now - this.lastShot > 200 - (this.powerLevel - 1) * 20) {  // 射击间隔随火力等级减少
+            const bulletWidth = 3;
+            const bulletHeight = 15;
+            const bulletSpeed = 8;
+            
+            // 根据火力等级发射不同数量的子弹
+            if (this.powerLevel === 1) {
+                // 单发子弹
+                this.bullets.push({
+                    x: this.player.x + this.player.width / 2 - bulletWidth / 2,
+                    y: this.player.y,
+                    width: bulletWidth,
+                    height: bulletHeight,
+                    speed: bulletSpeed,
+                    color: '#00ffff'
+                });
+            } else if (this.powerLevel === 2) {
+                // 双发子弹
+                this.bullets.push(
+                    {
+                        x: this.player.x + this.player.width / 2 - bulletWidth / 2 - 5,
+                        y: this.player.y,
+                        width: bulletWidth,
+                        height: bulletHeight,
+                        speed: bulletSpeed,
+                        color: '#00ffff'
+                    },
+                    {
+                        x: this.player.x + this.player.width / 2 - bulletWidth / 2 + 5,
+                        y: this.player.y,
+                        width: bulletWidth,
+                        height: bulletHeight,
+                        speed: bulletSpeed,
+                        color: '#00ffff'
+                    }
+                );
+            } else if (this.powerLevel >= 3) {
+                // 三发子弹
+                this.bullets.push(
+                    {
+                        x: this.player.x + this.player.width / 2 - bulletWidth / 2,
+                        y: this.player.y,
+                        width: bulletWidth,
+                        height: bulletHeight,
+                        speed: bulletSpeed,
+                        color: '#00ffff'
+                    },
+                    {
+                        x: this.player.x + this.player.width / 2 - bulletWidth / 2 - 8,
+                        y: this.player.y + 5,
+                        width: bulletWidth,
+                        height: bulletHeight,
+                        speed: bulletSpeed,
+                        color: '#00ffff'
+                    },
+                    {
+                        x: this.player.x + this.player.width / 2 - bulletWidth / 2 + 8,
+                        y: this.player.y + 5,
+                        width: bulletWidth,
+                        height: bulletHeight,
+                        speed: bulletSpeed,
+                        color: '#00ffff'
+                    }
+                );
+            }
+            
+            this.lastShot = now;
         }
+    }
+    
+    /**
+     * 特殊射击方法
+     * 发射强力激光束，对所有敌人造成伤害
+     */
+    specialShot() {
+        // 创建强力激光束
+        const laserWidth = this.width;  // 激光宽度等于屏幕宽度
+        const laserHeight = 20;
+        
+        this.bullets.push({
+            x: 0,
+            y: this.player.y - laserHeight,
+            width: laserWidth,
+            height: laserHeight,
+            speed: 0,  // 激光不移动
+            color: '#ff00ff',
+            isSpecial: true,  // 标记为特殊子弹
+            life: 10  // 激光持续时间
+        });
+        
+        // 对所有敌人造成伤害
+        this.enemies.forEach(enemy => {
+            enemy.health -= 50;  // 造成50点伤害
+            if (enemy.health <= 0) {
+                this.score += enemy.points;
+                this.levelEnemiesKilled++;
+                this.createExplosion(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2);
+            }
+        });
+        
+        // 移除已死亡的敌人
+        this.enemies = this.enemies.filter(enemy => enemy.health > 0);
     }
     
     /**
@@ -418,16 +634,17 @@ class Game {
      * 移动子弹并移除超出屏幕的子弹
      */
     updateBullets() {
-        // 从后往前遍历子弹数组，避免删除元素时索引错乱
-        for (let i = this.bullets.length - 1; i >= 0; i--) {
-            const bullet = this.bullets[i];
-            bullet.y -= bullet.speed;  // 子弹向上移动
-            
-            // 移除超出屏幕顶部的子弹
-            if (bullet.y < -bullet.height) {
-                this.bullets.splice(i, 1);  // 从数组中删除子弹
+        this.bullets = this.bullets.filter(bullet => {
+            if (bullet.isSpecial) {
+                // 特殊子弹（激光）处理
+                bullet.life--;
+                return bullet.life > 0;  // 激光持续时间结束后移除
+            } else {
+                // 普通子弹处理
+                bullet.y -= bullet.speed;  // 向上移动
+                return bullet.y > -bullet.height;  // 移除超出屏幕的子弹
             }
-        }
+        });
     }
     
     /**
@@ -607,8 +824,16 @@ class Game {
      * 显示关卡完成界面
      */
     levelComplete() {
-        this.gameState = 'levelComplete';  // 设置游戏状态为关卡完成
-        document.getElementById('levelComplete').classList.remove('hidden');  // 显示关卡完成界面
+        if (this.level === 10) {
+            // 第10关完成后显示游戏通关界面
+            this.gameState = 'gameComplete';
+            document.getElementById('finalScoreComplete').textContent = this.score;
+            document.getElementById('gameComplete').classList.remove('hidden');
+        } else {
+            // 其他关卡显示关卡完成界面
+            this.gameState = 'levelComplete';
+            document.getElementById('levelComplete').classList.remove('hidden');
+        }
     }
     
     /**
