@@ -23,8 +23,8 @@ function checkCollisions() {
                     createExplosion(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2);
                     gameState.enemies.splice(j, 1);
                     
-                    // 随机掉落道具（10%概率）
-                    if (Math.random() < 0.1) {
+                    // 增加道具掉落概率从10%到25%
+                    if (Math.random() < 0.25) {
                         gameState.powerUps.push({
                             x: enemy.x + enemy.width / 2 - 10,
                             y: enemy.y + enemy.height / 2,

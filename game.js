@@ -10,7 +10,7 @@ let gameState = {
     // 游戏核心数据
     score: 0,
     level: 1,
-    lives: 5,
+    lives: 8,
     powerLevel: 1,
     
     // 游戏对象数组
@@ -33,7 +33,7 @@ let gameState = {
     
     // 关卡进度
     levelEnemiesKilled: 0,
-    levelEnemiesRequired: 30,
+    levelEnemiesRequired: 20,
     
     // 画布相关
     canvas: null,
@@ -102,6 +102,82 @@ function setupEventListeners() {
     document.getElementById('gameCompleteRestartBtn').addEventListener('click', restartGame);
 }
 
+// ==================== 手柄菜单控制 ====================
+function handleGamepadMenuInput() {
+    if (!gameState.gamepadConnected || !gameState.gamepad) return;
+    
+    // 更新手柄状态
+    gameState.gamepad = navigator.getGamepads()[gameState.gamepad.index];
+    if (!gameState.gamepad) return;
+    
+    // 手柄按钮映射
+    const buttons = gameState.gamepad.buttons;
+    
+    // A键 (按钮0) - 确认/开始
+    if (buttons[0]?.pressed) {
+        handleMenuConfirm();
+    }
+    
+    // B键 (按钮1) - 返回/取消
+    if (buttons[1]?.pressed) {
+        handleMenuCancel();
+    }
+    
+    // X键 (按钮2) - 特殊功能
+    if (buttons[2]?.pressed) {
+        handleMenuSpecial();
+    }
+    
+    // Y键 (按钮3) - 特殊功能
+    if (buttons[3]?.pressed) {
+        handleMenuSpecial();
+    }
+}
+
+function handleMenuConfirm() {
+    // 防止重复触发
+    if (gameState.lastMenuInput && Date.now() - gameState.lastMenuInput < 300) return;
+    gameState.lastMenuInput = Date.now();
+    
+    // 根据当前游戏状态执行相应操作
+    switch (gameState.gameState) {
+        case 'start':
+            startGame();
+            break;
+        case 'gameOver':
+            restartGame();
+            break;
+        case 'levelComplete':
+            nextLevel();
+            break;
+        case 'gameComplete':
+            restartGame();
+            break;
+    }
+}
+
+function handleMenuCancel() {
+    // 防止重复触发
+    if (gameState.lastMenuInput && Date.now() - gameState.lastMenuInput < 300) return;
+    gameState.lastMenuInput = Date.now();
+    
+    // 返回开始界面
+    if (gameState.gameState !== 'start') {
+        restartGame();
+    }
+}
+
+function handleMenuSpecial() {
+    // 防止重复触发
+    if (gameState.lastMenuInput && Date.now() - gameState.lastMenuInput < 300) return;
+    gameState.lastMenuInput = Date.now();
+    
+    // 特殊功能：直接开始游戏
+    if (gameState.gameState === 'start') {
+        startGame();
+    }
+}
+
 // ==================== 玩家相关函数 ====================
 function createPlayer() {
     gameState.player = {
@@ -109,9 +185,9 @@ function createPlayer() {
         y: gameState.height - 80,
         width: 40,
         height: 40,
-        speed: 5,
-        health: 150,
-        maxHealth: 150,
+        speed: 6,
+        health: 200,
+        maxHealth: 200,
         color: '#4a90e2'
     };
 }
@@ -197,11 +273,11 @@ function updatePlayer() {
 // ==================== 射击系统 ====================
 function shoot() {
     const now = Date.now();
-    if (now - gameState.lastShot > 200 - (gameState.powerLevel - 1) * 20) {
-        const bulletWidth = 3;
-        const bulletHeight = 15;
-        const bulletSpeed = 8;
-        const bulletDamage = 15 + (gameState.powerLevel - 1) * 8; // 修复：添加伤害属性
+    if (now - gameState.lastShot > 150 - (gameState.powerLevel - 1) * 15) {
+        const bulletWidth = 4;
+        const bulletHeight = 18;
+        const bulletSpeed = 10;
+        const bulletDamage = 20 + (gameState.powerLevel - 1) * 10;
         
         if (gameState.powerLevel === 1) {
             gameState.bullets.push({
@@ -211,7 +287,7 @@ function shoot() {
                 height: bulletHeight,
                 speed: bulletSpeed,
                 color: '#00ffff',
-                damage: bulletDamage // 修复：添加伤害属性
+                damage: bulletDamage
             });
         } else if (gameState.powerLevel === 2) {
             gameState.bullets.push(
@@ -280,11 +356,11 @@ function specialShot() {
         gameState.bullets.push({
             x: gameState.player.x + gameState.player.width / 2 - 2 + offset,
             y: gameState.player.y,
-            width: 4,
-            height: 20, // 更长的子弹
-            speed: 12, // 更快的速度
-            color: '#ff00ff', // 特殊颜色
-            damage: 30 + (gameState.powerLevel - 1) * 10, // 更高伤害
+            width: 5,
+            height: 25,
+            speed: 15,
+            color: '#ff00ff',
+            damage: 40 + (gameState.powerLevel - 1) * 15,
             isSpecial: true
         });
     }
@@ -307,16 +383,16 @@ function updateBullets() {
 // ==================== 关卡系统 ====================
 function loadLevelData() {
     gameState.levelData = {
-        1: { enemies: ['fighter', 'bomber', 'scout'], spawnRate: 80, enemySpeed: 1.5 },
-        2: { enemies: ['fighter', 'bomber', 'scout', 'interceptor'], spawnRate: 75, enemySpeed: 1.6 },
-        3: { enemies: ['fighter', 'bomber', 'scout', 'interceptor', 'gunship'], spawnRate: 70, enemySpeed: 1.7 },
-        4: { enemies: ['fighter', 'bomber', 'scout', 'interceptor', 'gunship', 'destroyer'], spawnRate: 65, enemySpeed: 1.8 },
-        5: { enemies: ['fighter', 'bomber', 'scout', 'interceptor', 'gunship', 'destroyer', 'carrier'], spawnRate: 60, enemySpeed: 1.9 },
-        6: { enemies: ['fighter', 'bomber', 'scout', 'interceptor', 'gunship', 'destroyer', 'carrier', 'battleship'], spawnRate: 55, enemySpeed: 2.0 },
-        7: { enemies: ['fighter', 'bomber', 'scout', 'interceptor', 'gunship', 'destroyer', 'carrier', 'battleship', 'dreadnought'], spawnRate: 50, enemySpeed: 2.1 },
-        8: { enemies: ['fighter', 'bomber', 'scout', 'interceptor', 'gunship', 'destroyer', 'carrier', 'battleship', 'dreadnought', 'titan'], spawnRate: 45, enemySpeed: 2.2 },
-        9: { enemies: ['fighter', 'bomber', 'scout', 'interceptor', 'gunship', 'destroyer', 'carrier', 'battleship', 'dreadnought', 'titan'], spawnRate: 40, enemySpeed: 2.3 },
-        10: { enemies: ['fighter', 'bomber', 'scout', 'interceptor', 'gunship', 'destroyer', 'carrier', 'battleship', 'dreadnought', 'titan'], spawnRate: 35, enemySpeed: 2.5 },
+        1: { enemies: ['fighter', 'bomber'], spawnRate: 100, enemySpeed: 1.0 },
+        2: { enemies: ['fighter', 'bomber', 'scout'], spawnRate: 95, enemySpeed: 1.1 },
+        3: { enemies: ['fighter', 'bomber', 'scout', 'interceptor'], spawnRate: 90, enemySpeed: 1.2 },
+        4: { enemies: ['fighter', 'bomber', 'scout', 'interceptor', 'gunship'], spawnRate: 85, enemySpeed: 1.3 },
+        5: { enemies: ['fighter', 'bomber', 'scout', 'interceptor', 'gunship', 'destroyer'], spawnRate: 80, enemySpeed: 1.4 },
+        6: { enemies: ['fighter', 'bomber', 'scout', 'interceptor', 'gunship', 'destroyer', 'carrier'], spawnRate: 75, enemySpeed: 1.5 },
+        7: { enemies: ['fighter', 'bomber', 'scout', 'interceptor', 'gunship', 'destroyer', 'carrier', 'battleship'], spawnRate: 70, enemySpeed: 1.6 },
+        8: { enemies: ['fighter', 'bomber', 'scout', 'interceptor', 'gunship', 'destroyer', 'carrier', 'battleship', 'dreadnought'], spawnRate: 65, enemySpeed: 1.7 },
+        9: { enemies: ['fighter', 'bomber', 'scout', 'interceptor', 'gunship', 'destroyer', 'carrier', 'battleship', 'dreadnought', 'titan'], spawnRate: 60, enemySpeed: 1.8 },
+        10: { enemies: ['fighter', 'bomber', 'scout', 'interceptor', 'gunship', 'destroyer', 'carrier', 'battleship', 'dreadnought', 'titan'], spawnRate: 55, enemySpeed: 1.9 },
         11: { enemies: ['fighter'], spawnRate: 1000, enemySpeed: 1.0 }
     };
 }
@@ -331,7 +407,7 @@ function startGame() {
 function restartGame() {
     gameState.score = 0;
     gameState.level = 1;
-    gameState.lives = 5;
+    gameState.lives = 8;
     gameState.powerLevel = 1;
     gameState.gameState = 'playing';
     
@@ -374,6 +450,7 @@ function gameLoop() {
     update();
     render();
     updateUI();
+    handleGamepadMenuInput(); // 添加手柄菜单输入处理
     requestAnimationFrame(gameLoop);
 }
 

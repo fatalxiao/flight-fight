@@ -1,17 +1,17 @@
 // ==================== 敌人系统 ====================
 
-// 敌人类型配置
+// 敌人类型配置 - 降低难度
 const enemyTypes = {
-    fighter: { width: 30, height: 25, health: 20, speed: 1.2, color: '#ff6b6b', points: 10, fireRate: 120 },
-    bomber: { width: 35, height: 30, health: 30, speed: 0.8, color: '#ff8e8e', points: 15, fireRate: 100 },
-    scout: { width: 25, height: 20, health: 15, speed: 1.8, color: '#ffa5a5', points: 8, fireRate: 80 },
-    interceptor: { width: 32, height: 28, health: 25, speed: 1.5, color: '#ffb5b5', points: 12, fireRate: 90 },
-    gunship: { width: 40, height: 35, health: 40, speed: 0.6, color: '#ffc5c5', points: 20, fireRate: 110 },
-    destroyer: { width: 50, height: 40, health: 50, speed: 0.7, color: '#ffd5d5', points: 30, fireRate: 80 },
-    carrier: { width: 60, height: 45, health: 60, speed: 0.5, color: '#ffe5e5', points: 50, fireRate: 90 },
-    battleship: { width: 70, height: 55, health: 75, speed: 0.6, color: '#ffaaa5', points: 100, fireRate: 70 },
-    dreadnought: { width: 80, height: 60, health: 100, speed: 0.5, color: '#ff8b94', points: 150, fireRate: 60 },
-    titan: { width: 90, height: 65, health: 150, speed: 0.4, color: '#ff6b9d', points: 250, fireRate: 50 }
+    fighter: { width: 30, height: 25, health: 15, speed: 1.0, color: '#ff6b6b', points: 10, fireRate: 150 }, // 降低血量、速度、射击频率
+    bomber: { width: 35, height: 30, health: 20, speed: 0.6, color: '#ff8e8e', points: 15, fireRate: 120 },
+    scout: { width: 25, height: 20, health: 10, speed: 1.4, color: '#ffa5a5', points: 8, fireRate: 100 },
+    interceptor: { width: 32, height: 28, health: 18, speed: 1.2, color: '#ffb5b5', points: 12, fireRate: 110 },
+    gunship: { width: 40, height: 35, health: 25, speed: 0.5, color: '#ffc5c5', points: 20, fireRate: 130 },
+    destroyer: { width: 50, height: 40, health: 35, speed: 0.6, color: '#ffd5d5', points: 30, fireRate: 100 },
+    carrier: { width: 60, height: 45, health: 45, speed: 0.4, color: '#ffe5e5', points: 50, fireRate: 110 },
+    battleship: { width: 70, height: 55, health: 55, speed: 0.5, color: '#ffaaa5', points: 100, fireRate: 90 },
+    dreadnought: { width: 80, height: 60, health: 70, speed: 0.4, color: '#ff8b94', points: 150, fireRate: 80 },
+    titan: { width: 90, height: 65, health: 100, speed: 0.3, color: '#ff6b9d', points: 250, fireRate: 70 }
 };
 
 function createEnemy(type) {
@@ -42,8 +42,8 @@ function createEnemy(type) {
         y: -config.height,
         width: config.width,
         height: config.height,
-        health: config.health + (gameState.level - 1) * 5,
-        maxHealth: config.health + (gameState.level - 1) * 5,
+        health: config.health + (gameState.level - 1) * 3, // 减少每关血量增长从5到3
+        maxHealth: config.health + (gameState.level - 1) * 3,
         speed: config.speed * speedMultiplier,
         color: config.color,
         points: config.points,
@@ -97,11 +97,11 @@ function enemyShoot(enemy) {
     gameState.enemyBullets.push({
         x: enemy.x + enemy.width / 2 - 2,
         y: enemy.y + enemy.height,
-        width: 4,
-        height: 8,
-        speed: 4,
+        width: 3, // 减少子弹宽度从4到3
+        height: 6, // 减少子弹高度从8到6
+        speed: 3, // 减少子弹速度从4到3
         color: '#ff6b6b',
-        damage: 15
+        damage: 10 // 减少子弹伤害从15到10
     });
 }
 
