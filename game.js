@@ -2,1127 +2,394 @@
  * 闪电战机游戏主类
  * 负责管理整个游戏的状态、逻辑和渲染
  */
-class Game {
-    /**
-     * 游戏构造函数
-     * 初始化游戏的所有基本属性和状态
-     */
-    constructor() {
-        // 获取游戏画布和绘图上下文
-        this.canvas = document.getElementById('gameCanvas');
-        this.ctx = this.canvas.getContext('2d');
-        this.width = this.canvas.width;  // 画布宽度
-        this.height = this.canvas.height; // 画布高度
-        
-        // 游戏状态管理：start(开始界面), playing(游戏中), paused(暂停), gameOver(游戏结束), levelComplete(关卡完成), gameComplete(游戏通关)
-        this.gameState = 'start';
-        
-        // 游戏核心数据
-        this.score = 0;        // 当前得分
-        this.level = 1;        // 当前关卡
-        this.lives = 5;        // 剩余生命值
-        this.powerLevel = 1;   // 火力等级
-        
-        // 游戏对象数组
-        this.player = null;        // 玩家对象
-        this.enemies = [];         // 敌人数组
-        this.bullets = [];         // 玩家子弹数组
-        this.enemyBullets = [];    // 敌人子弹数组
-        this.explosions = [];      // 爆炸效果数组
-        this.powerUps = [];        // 道具数组
-        
-        // 输入控制
-        this.keys = {};            // 按键状态对象
-        this.gamepad = null;       // 手柄对象
-        this.gamepadConnected = false; // 手柄连接状态
-        
-        // 时间控制变量
-        this.lastShot = 0;         // 上次射击时间
-        this.lastSpecialShot = 0;  // 上次特殊射击时间
-        this.enemySpawnTimer = 0;  // 敌人生成计时器
-        
-        // 关卡进度
-        this.levelEnemiesKilled = 0;      // 当前关卡已击杀敌人数
-        this.levelEnemiesRequired = 30;   // 每关需要击落的敌人数
-        
-        // 初始化游戏
-        this.init();
-    }
+// ==================== 游戏状态管理 ====================
+let gameState = {
+    // 游戏状态
+    gameState: 'start',
     
-    /**
-     * 游戏初始化方法
-     * 设置事件监听器、创建玩家、加载关卡数据并启动游戏循环
-     */
-    init() {
-        this.setupEventListeners();  // 设置事件监听器
-        this.createPlayer();         // 创建玩家对象
-        this.loadLevelData();        // 加载关卡配置数据
-        this.gameLoop();             // 启动游戏主循环
-    }
+    // 游戏核心数据
+    score: 0,
+    level: 1,
+    lives: 5,
+    powerLevel: 1,
     
-    /**
-     * 设置游戏事件监听器
-     * 监听键盘输入、手柄输入和按钮点击事件
-     */
-    setupEventListeners() {
-        // 键盘按下事件监听
-        document.addEventListener('keydown', (e) => {
-            this.keys[e.code] = true;  // 记录按键状态为按下
-            if (e.code === 'Space') {
-                e.preventDefault();     // 防止空格键滚动页面
-            }
-        });
-        
-        // 键盘释放事件监听
-        document.addEventListener('keyup', (e) => {
-            this.keys[e.code] = false; // 记录按键状态为释放
-        });
-        
-        // 手柄连接事件监听
-        window.addEventListener('gamepadconnected', (e) => {
-            console.log('手柄已连接:', e.gamepad);
-            this.gamepadConnected = true;
-            this.gamepad = e.gamepad;
-        });
-        
-        // 手柄断开连接事件监听
-        window.addEventListener('gamepaddisconnected', (e) => {
-            console.log('手柄已断开连接:', e.gamepad);
-            this.gamepadConnected = false;
-            this.gamepad = null;
-        });
-        
-        // 开始游戏按钮点击事件
-        document.getElementById('startBtn').addEventListener('click', () => {
-            this.startGame();
-        });
-        
-        // 重新开始按钮点击事件
-        document.getElementById('restartBtn').addEventListener('click', () => {
-            this.restartGame();
-        });
-        
-        // 下一关按钮点击事件
-        document.getElementById('nextLevelBtn').addEventListener('click', () => {
-            this.nextLevel();
-        });
-        
-        // 游戏通关重新开始按钮点击事件
-        document.getElementById('gameCompleteRestartBtn').addEventListener('click', () => {
-            this.restartGame();
-        });
-    }
+    // 游戏对象数组
+    player: null,
+    enemies: [],
+    bullets: [],
+    enemyBullets: [],
+    explosions: [],
+    powerUps: [],
     
-    /**
-     * 创建玩家对象
-     * 初始化玩家的位置、大小、速度等属性
-     */
-    createPlayer() {
-        this.player = {
-            x: this.width / 2,      // 水平居中位置
-            y: this.height - 80,    // 距离底部80像素
-            width: 40,              // 玩家宽度
-            height: 40,             // 玩家高度
-            speed: 5,               // 移动速度
-            health: 150,            // 当前生命值
-            maxHealth: 150,         // 最大生命值
-            color: '#4a90e2'        // 玩家颜色（蓝色）
-        };
-    }
+    // 输入控制
+    keys: {},
+    gamepad: null,
+    gamepadConnected: false,
     
-    /**
-     * 加载关卡配置数据
-     * 定义每个关卡的敌人类型、生成频率和速度等参数
-     */
-    loadLevelData() {
-        this.levelData = {
-            // 第1关：基础敌人，较慢的生成速度
-            1: { 
-                enemies: ['fighter', 'bomber', 'scout'], 
-                spawnRate: 80,      // 敌人生成间隔（帧数）
-                enemySpeed: 1.5     // 敌人移动速度倍数
-            },
-            // 第2关：增加拦截机敌人
-            2: { 
-                enemies: ['fighter', 'bomber', 'scout', 'interceptor'], 
-                spawnRate: 75, 
-                enemySpeed: 1.6 
-            },
-            // 第3关：增加炮舰敌人
-            3: { 
-                enemies: ['fighter', 'bomber', 'scout', 'interceptor', 'gunship'], 
-                spawnRate: 70, 
-                enemySpeed: 1.7 
-            },
-            // 第4关：增加驱逐舰敌人
-            4: { 
-                enemies: ['fighter', 'bomber', 'scout', 'interceptor', 'gunship', 'destroyer'], 
-                spawnRate: 65, 
-                enemySpeed: 1.8 
-            },
-            // 第5关：增加航母敌人
-            5: { 
-                enemies: ['fighter', 'bomber', 'scout', 'interceptor', 'gunship', 'destroyer', 'carrier'], 
-                spawnRate: 60, 
-                enemySpeed: 1.9 
-            },
-            // 第6关：增加战列舰敌人
-            6: { 
-                enemies: ['fighter', 'bomber', 'scout', 'interceptor', 'gunship', 'destroyer', 'carrier', 'battleship'], 
-                spawnRate: 55, 
-                enemySpeed: 2.0 
-            },
-            // 第7关：增加无畏舰敌人
-            7: { 
-                enemies: ['fighter', 'bomber', 'scout', 'interceptor', 'gunship', 'destroyer', 'carrier', 'battleship', 'dreadnought'], 
-                spawnRate: 50, 
-                enemySpeed: 2.1 
-            },
-            // 第8关：增加泰坦级敌人
-            8: { 
-                enemies: ['fighter', 'bomber', 'scout', 'interceptor', 'gunship', 'destroyer', 'carrier', 'battleship', 'dreadnought', 'titan'], 
-                spawnRate: 45, 
-                enemySpeed: 2.2 
-            },
-            // 第9关：最高难度
-            9: { 
-                enemies: ['fighter', 'bomber', 'scout', 'interceptor', 'gunship', 'destroyer', 'carrier', 'battleship', 'dreadnought', 'titan'], 
-                spawnRate: 40, 
-                enemySpeed: 2.3 
-            },
-            // 第10关：终极挑战
-            10: { 
-                enemies: ['fighter', 'bomber', 'scout', 'interceptor', 'gunship', 'destroyer', 'carrier', 'battleship', 'dreadnought', 'titan'], 
-                spawnRate: 35, 
-                enemySpeed: 2.5 
-            },
-            // 第11关：游戏通关关卡（特殊关卡，用于触发通关界面）
-            11: { 
-                enemies: ['fighter'], 
-                spawnRate: 1000, 
-                enemySpeed: 1.0 
-            }
-        };
-    }
+    // 时间控制变量
+    lastShot: 0,
+    lastSpecialShot: 0,
+    enemySpawnTimer: 0,
     
-    /**
-     * 开始游戏方法
-     * 将游戏状态设置为playing并隐藏开始界面
-     */
-    startGame() {
-        this.gameState = 'playing';  // 设置游戏状态为进行中
-        document.getElementById('startScreen').classList.add('hidden');  // 隐藏开始界面
-        this.resetLevel();  // 重置当前关卡
-    }
+    // 关卡进度
+    levelEnemiesKilled: 0,
+    levelEnemiesRequired: 30,
     
-    /**
-     * 重新开始游戏方法
-     * 重置所有游戏数据到初始状态
-     */
-    restartGame() {
-        this.score = 0;        // 重置得分
-        this.level = 1;        // 重置关卡
-        this.lives = 5;        // 重置生命值
-        this.powerLevel = 1;   // 重置火力等级
-        this.gameState = 'playing';  // 设置游戏状态为进行中
-        
-        // 隐藏所有界面
-        document.getElementById('startScreen').classList.add('hidden');
-        document.getElementById('gameOver').classList.add('hidden');
-        document.getElementById('levelComplete').classList.add('hidden');
-        document.getElementById('gameComplete').classList.add('hidden');
-        
-        this.resetLevel();  // 重置当前关卡
-    }
+    // 画布相关
+    canvas: null,
+    ctx: null,
+    width: 0,
+    height: 0,
     
-    /**
-     * 进入下一关方法
-     * 增加关卡数并重置关卡状态
-     */
-    nextLevel() {
-        this.level++;  // 关卡数加1
-        this.levelEnemiesKilled = 0;  // 重置关卡击杀数
-        
-        // 隐藏关卡完成界面
-        document.getElementById('levelComplete').classList.add('hidden');
-        
-        if (this.level <= 10) {
-            // 正常进入下一关
-            this.gameState = 'playing';
-            this.resetLevel();
-        } else {
-            // 第10关后显示游戏通关
-            this.gameState = 'gameComplete';
-            document.getElementById('gameComplete').classList.remove('hidden');
+    // 关卡数据
+    levelData: {}
+};
+
+// ==================== 初始化函数 ====================
+function initGame() {
+    // 获取画布和上下文
+    gameState.canvas = document.getElementById('gameCanvas');
+    gameState.ctx = gameState.canvas.getContext('2d');
+    gameState.width = gameState.canvas.width;
+    gameState.height = gameState.canvas.height;
+    
+    // 初始化游戏
+    setupEventListeners();
+    createPlayer();
+    loadLevelData();
+    gameLoop();
+}
+
+// ==================== 事件监听器 ====================
+function setupEventListeners() {
+    // 键盘按下事件监听
+    document.addEventListener('keydown', (e) => {
+        gameState.keys[e.code] = true;
+        if (e.code === 'Space') {
+            e.preventDefault();
         }
+    });
+    
+    // 键盘释放事件监听
+    document.addEventListener('keyup', (e) => {
+        gameState.keys[e.code] = false;
+    });
+    
+    // 手柄连接事件监听
+    window.addEventListener('gamepadconnected', (e) => {
+        console.log('手柄已连接:', e.gamepad);
+        gameState.gamepadConnected = true;
+        gameState.gamepad = e.gamepad;
+    });
+    
+    // 手柄断开连接事件监听
+    window.addEventListener('gamepaddisconnected', (e) => {
+        console.log('手柄已断开连接:', e.gamepad);
+        gameState.gamepadConnected = false;
+        gameState.gamepad = null;
+    });
+    
+    // 开始游戏按钮点击事件
+    document.getElementById('startBtn').addEventListener('click', startGame);
+    
+    // 重新开始按钮点击事件
+    document.getElementById('restartBtn').addEventListener('click', restartGame);
+    
+    // 下一关按钮点击事件
+    document.getElementById('nextLevelBtn').addEventListener('click', nextLevel);
+    
+    // 游戏通关重新开始按钮点击事件
+    document.getElementById('gameCompleteRestartBtn').addEventListener('click', restartGame);
+}
+
+// ==================== 玩家相关函数 ====================
+function createPlayer() {
+    gameState.player = {
+        x: gameState.width / 2,
+        y: gameState.height - 80,
+        width: 40,
+        height: 40,
+        speed: 5,
+        health: 150,
+        maxHealth: 150,
+        color: '#4a90e2'
+    };
+}
+
+function updatePlayer() {
+    if (gameState.gameState !== 'playing') return;
+    
+    const currentLevelData = gameState.levelData[gameState.level];
+    if (!currentLevelData) return;
+    
+    // 键盘控制
+    let moveX = 0;
+    let moveY = 0;
+    
+    if (gameState.keys['ArrowLeft'] || gameState.keys['KeyA']) {
+        moveX -= gameState.player.speed;
+    }
+    if (gameState.keys['ArrowRight'] || gameState.keys['KeyD']) {
+        moveX += gameState.player.speed;
+    }
+    if (gameState.keys['ArrowUp'] || gameState.keys['KeyW']) {
+        moveY -= gameState.player.speed;
+    }
+    if (gameState.keys['ArrowDown'] || gameState.keys['KeyS']) {
+        moveY += gameState.player.speed;
     }
     
-    /**
-     * 重置关卡方法
-     * 清空所有游戏对象，重新创建玩家，重置关卡进度
-     */
-    resetLevel() {
-        this.enemies = [];             // 清空敌人数组
-        this.bullets = [];             // 清空玩家子弹数组
-        this.enemyBullets = [];        // 清空敌人子弹数组
-        this.explosions = [];          // 清空爆炸效果数组
-        this.powerUps = [];            // 清空道具数组
-        this.enemySpawnTimer = 0;      // 重置敌人生成计时器
-        this.createPlayer();           // 重新创建玩家对象
-    }
-    
-    /**
-     * 创建敌人方法
-     * 根据敌人类型创建具有不同属性的敌人对象
-     */
-    createEnemy(type) {
-        // 敌人类型配置：定义不同敌人的属性
-        const enemyTypes = {
-            fighter: { width: 30, height: 25, health: 20, speed: 1.2, color: '#ff6b6b', points: 10, fireRate: 120 },    // 战斗机：基础敌人
-            bomber: { width: 35, height: 30, health: 30, speed: 0.8, color: '#ff8e8e', points: 15, fireRate: 100 },    // 轰炸机：血量较高
-            scout: { width: 25, height: 20, health: 15, speed: 1.8, color: '#ffa5a5', points: 8, fireRate: 80 },       // 侦察机：速度快
-            interceptor: { width: 32, height: 28, health: 25, speed: 1.5, color: '#ffb5b5', points: 12, fireRate: 90 }, // 拦截机：平衡型
-            gunship: { width: 40, height: 35, health: 40, speed: 0.6, color: '#ffc5c5', points: 20, fireRate: 110 },   // 炮舰：重型敌人
-            destroyer: { width: 50, height: 40, health: 50, speed: 0.7, color: '#ffd5d5', points: 30, fireRate: 80 },  // 驱逐舰：强力敌人
-            carrier: { width: 60, height: 45, health: 60, speed: 0.5, color: '#ffe5e5', points: 50, fireRate: 90 },   // 航母：超重型敌人
-            battleship: { width: 70, height: 55, health: 75, speed: 0.6, color: '#ffaaa5', points: 100, fireRate: 70 },  // 战列舰：超强
-            dreadnought: { width: 80, height: 60, health: 100, speed: 0.5, color: '#ff8b94', points: 150, fireRate: 60 }, // 无畏舰：终极敌人
-            titan: { width: 90, height: 65, health: 150, speed: 0.4, color: '#ff6b9d', points: 250, fireRate: 50 }        // 泰坦：Boss级敌人
-        };
+    // 手柄控制
+    if (gameState.gamepadConnected && gameState.gamepad) {
+        gameState.gamepad = navigator.getGamepads()[gameState.gamepad.index];
         
-        const config = enemyTypes[type];  // 获取敌人配置
-        const currentLevel = this.levelData[this.level];  // 获取当前关卡配置
-        
-        // 如果没有关卡数据，使用默认配置
-        if (!currentLevel) {
-            return {
-                x: Math.random() * (this.width - config.width),
-                y: -config.height,
-                width: config.width,
-                height: config.height,
-                health: config.health,
-                maxHealth: config.health,
-                speed: config.speed,
-                color: config.color,
-                points: config.points,
-                fireRate: config.fireRate,
-                lastShot: 0,
-                type: type
-            };
-        }
-        
-        const speedMultiplier = currentLevel.enemySpeed;  // 获取速度倍数
-        
-        // 创建并返回敌人对象
-        return {
-            x: Math.random() * (this.width - config.width),  // 随机水平位置
-            y: -config.height,                               // 从屏幕顶部上方开始
-            width: config.width,                             // 敌人宽度
-            height: config.height,                           // 敌人高度
-            health: config.health + (this.level - 1) * 5,   // 血量随关卡递增
-            maxHealth: config.health + (this.level - 1) * 5, // 最大血量
-            speed: config.speed * speedMultiplier,           // 速度乘以关卡倍数
-            color: config.color,                             // 敌人颜色
-            points: config.points,                           // 击杀得分
-            fireRate: config.fireRate,                       // 射击频率
-            lastShot: 0,                                     // 上次射击时间
-            type: type                                       // 敌人类型
-        };
-    }
-    
-    /**
-     * 生成单个敌人方法
-     * 根据当前关卡配置随机生成敌人
-     */
-    spawnEnemy() {
-        const currentLevel = this.levelData[this.level];  // 获取当前关卡配置
-        
-        // 如果没有关卡数据，不生成敌人
-        if (!currentLevel) return;
-        
-        const enemyTypes = currentLevel.enemies;          // 获取可用的敌人类型
-        const randomType = enemyTypes[Math.floor(Math.random() * enemyTypes.length)];  // 随机选择敌人类型
-        this.enemies.push(this.createEnemy(randomType));  // 创建敌人并添加到数组
-    }
-    
-    /**
-     * 生成敌人方法
-     * 根据当前关卡配置定时生成敌人
-     */
-    spawnEnemies() {
-        const currentLevel = this.levelData[this.level];  // 获取当前关卡配置
-        
-        // 如果没有关卡数据，不生成敌人
-        if (!currentLevel) return;
-        
-        this.enemySpawnTimer++;                           // 增加敌人生成计时器
-        
-        // 检查是否到了生成敌人的时间
-        if (this.enemySpawnTimer >= currentLevel.spawnRate) {
-            this.spawnEnemy();        // 生成敌人
-            this.enemySpawnTimer = 0; // 重置计时器
-        }
-    }
-    
-    /**
-     * 游戏主更新方法
-     * 在每一帧调用，更新所有游戏对象的状态
-     */
-    update() {
-        if (this.gameState !== 'playing') return;  // 如果不是游戏进行状态，直接返回
-        
-        this.updatePlayer();        // 更新玩家状态
-        this.updateEnemies();       // 更新敌人状态
-        this.updateBullets();       // 更新玩家子弹
-        this.updateEnemyBullets();  // 更新敌人子弹
-        this.updateExplosions();    // 更新爆炸效果
-        this.updatePowerUps();      // 更新道具
-        this.checkCollisions();     // 检查碰撞
-        this.spawnEnemies();        // 生成新敌人
-        this.checkLevelComplete();  // 检查关卡是否完成
-    }
-    
-    /**
-     * 更新玩家状态
-     * 处理玩家移动、射击和特殊技能
-     */
-    updatePlayer() {
-        if (this.gameState !== 'playing') return;  // 只在游戏进行中更新玩家
-        
-        // 获取当前关卡数据
-        const currentLevelData = this.levelData[this.level];
-        if (!currentLevelData) return;  // 如果没有关卡数据，不更新
-        
-        // 键盘控制
-        let moveX = 0;
-        let moveY = 0;
-        
-        if (this.keys['ArrowLeft'] || this.keys['KeyA']) {
-            moveX -= this.player.speed;
-        }
-        if (this.keys['ArrowRight'] || this.keys['KeyD']) {
-            moveX += this.player.speed;
-        }
-        if (this.keys['ArrowUp'] || this.keys['KeyW']) {
-            moveY -= this.player.speed;
-        }
-        if (this.keys['ArrowDown'] || this.keys['KeyS']) {
-            moveY += this.player.speed;
-        }
-        
-        // 手柄控制
-        if (this.gamepadConnected && this.gamepad) {
-            // 更新手柄状态
-            this.gamepad = navigator.getGamepads()[this.gamepad.index];
+        if (gameState.gamepad) {
+            const leftStickX = gameState.gamepad.axes[0];
+            const leftStickY = gameState.gamepad.axes[1];
             
-            if (this.gamepad) {
-                // 左摇杆控制移动
-                const leftStickX = this.gamepad.axes[0];  // 左摇杆X轴
-                const leftStickY = this.gamepad.axes[1];  // 左摇杆Y轴
-                
-                // 添加死区，避免摇杆漂移
-                const deadzone = 0.1;
-                if (Math.abs(leftStickX) > deadzone) {
-                    moveX += leftStickX * this.player.speed * 2;
-                }
-                if (Math.abs(leftStickY) > deadzone) {
-                    moveY += leftStickY * this.player.speed * 2;
-                }
-                
-                // 十字键控制（备用）
-                if (this.gamepad.buttons[14]?.pressed) {  // 左
-                    moveX -= this.player.speed;
-                }
-                if (this.gamepad.buttons[15]?.pressed) {  // 右
-                    moveX += this.player.speed;
-                }
-                if (this.gamepad.buttons[12]?.pressed) {  // 上
-                    moveY -= this.player.speed;
-                }
-                if (this.gamepad.buttons[13]?.pressed) {  // 下
-                    moveY += this.player.speed;
-                }
+            const deadzone = 0.1;
+            if (Math.abs(leftStickX) > deadzone) {
+                moveX += leftStickX * gameState.player.speed * 2;
             }
-        }
-        
-        // 更新玩家位置
-        this.player.x += moveX;
-        this.player.y += moveY;
-        
-        // 边界检测：确保玩家不会移出屏幕
-        this.player.x = Math.max(0, Math.min(this.width - this.player.width, this.player.x));
-        this.player.y = Math.max(0, Math.min(this.height - this.player.height, this.player.y));
-        
-        // 自动射击
-        this.shoot();
-        
-        // 特殊射击（空格键或手柄右扳机）
-        const currentTime = Date.now();
-        const specialShotCooldown = 2000;  // 2秒冷却时间
-        
-        let shouldSpecialShot = false;
-        
-        // 键盘特殊射击
-        if (this.keys['Space']) {
-            shouldSpecialShot = true;
-        }
-        
-        // 手柄特殊射击（右扳机）
-        if (this.gamepadConnected && this.gamepad && this.gamepad.buttons[7]?.pressed) {
-            shouldSpecialShot = true;
-        }
-        
-        if (shouldSpecialShot && currentTime - this.lastSpecialShot > specialShotCooldown) {
-            this.specialShot();
-            this.lastSpecialShot = currentTime;
-        }
-    }
-    
-    /**
-     * 玩家射击方法
-     * 根据火力等级发射不同数量的子弹
-     */
-    shoot() {
-        const now = Date.now();
-        if (now - this.lastShot > 200 - (this.powerLevel - 1) * 20) {  // 射击间隔随火力等级减少
-            const bulletWidth = 3;
-            const bulletHeight = 15;
-            const bulletSpeed = 8;
-            
-            // 根据火力等级发射不同数量的子弹
-            if (this.powerLevel === 1) {
-                // 单发子弹
-                this.bullets.push({
-                    x: this.player.x + this.player.width / 2 - bulletWidth / 2,
-                    y: this.player.y,
-                    width: bulletWidth,
-                    height: bulletHeight,
-                    speed: bulletSpeed,
-                    color: '#00ffff'
-                });
-            } else if (this.powerLevel === 2) {
-                // 双发子弹
-                this.bullets.push(
-                    {
-                        x: this.player.x + this.player.width / 2 - bulletWidth / 2 - 5,
-                        y: this.player.y,
-                        width: bulletWidth,
-                        height: bulletHeight,
-                        speed: bulletSpeed,
-                        color: '#00ffff'
-                    },
-                    {
-                        x: this.player.x + this.player.width / 2 - bulletWidth / 2 + 5,
-                        y: this.player.y,
-                        width: bulletWidth,
-                        height: bulletHeight,
-                        speed: bulletSpeed,
-                        color: '#00ffff'
-                    }
-                );
-            } else if (this.powerLevel >= 3) {
-                // 三发子弹
-                this.bullets.push(
-                    {
-                        x: this.player.x + this.player.width / 2 - bulletWidth / 2,
-                        y: this.player.y,
-                        width: bulletWidth,
-                        height: bulletHeight,
-                        speed: bulletSpeed,
-                        color: '#00ffff'
-                    },
-                    {
-                        x: this.player.x + this.player.width / 2 - bulletWidth / 2 - 8,
-                        y: this.player.y + 5,
-                        width: bulletWidth,
-                        height: bulletHeight,
-                        speed: bulletSpeed,
-                        color: '#00ffff'
-                    },
-                    {
-                        x: this.player.x + this.player.width / 2 - bulletWidth / 2 + 8,
-                        y: this.player.y + 5,
-                        width: bulletWidth,
-                        height: bulletHeight,
-                        speed: bulletSpeed,
-                        color: '#00ffff'
-                    }
-                );
+            if (Math.abs(leftStickY) > deadzone) {
+                moveY += leftStickY * gameState.player.speed * 2;
             }
             
-            this.lastShot = now;
+            // 十字键控制
+            if (gameState.gamepad.buttons[14]?.pressed) moveX -= gameState.player.speed;
+            if (gameState.gamepad.buttons[15]?.pressed) moveX += gameState.player.speed;
+            if (gameState.gamepad.buttons[12]?.pressed) moveY -= gameState.player.speed;
+            if (gameState.gamepad.buttons[13]?.pressed) moveY += gameState.player.speed;
         }
     }
     
-    /**
-     * 特殊射击方法
-     * 发射强力激光束，对所有敌人造成伤害
-     */
-    specialShot() {
-        // 创建强力激光束
-        const laserWidth = this.width;  // 激光宽度等于屏幕宽度
-        const laserHeight = 20;
-        
-        this.bullets.push({
-            x: 0,
-            y: this.player.y - laserHeight,
-            width: laserWidth,
-            height: laserHeight,
-            speed: 0,  // 激光不移动
-            color: '#ff00ff',
-            isSpecial: true,  // 标记为特殊子弹
-            life: 10  // 激光持续时间
-        });
-        
-        // 对所有敌人造成伤害
-        this.enemies.forEach(enemy => {
-            enemy.health -= 50;  // 造成50点伤害
-            if (enemy.health <= 0) {
-                this.score += enemy.points;
-                this.levelEnemiesKilled++;
-                this.createExplosion(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2);
-            }
-        });
-        
-        // 移除已死亡的敌人
-        this.enemies = this.enemies.filter(enemy => enemy.health > 0);
+    // 更新玩家位置
+    gameState.player.x += moveX;
+    gameState.player.y += moveY;
+    
+    // 边界检测
+    gameState.player.x = Math.max(0, Math.min(gameState.width - gameState.player.width, gameState.player.x));
+    gameState.player.y = Math.max(0, Math.min(gameState.height - gameState.player.height, gameState.player.y));
+    
+    // 自动射击
+    shoot();
+    
+    // 特殊射击
+    const currentTime = Date.now();
+    const specialShotCooldown = 2000;
+    
+    let shouldSpecialShot = false;
+    
+    if (gameState.keys['Space']) {
+        shouldSpecialShot = true;
     }
     
-    /**
-     * 更新敌人状态
-     * 移动敌人、处理敌人射击、移除超出屏幕的敌人
-     */
-    updateEnemies() {
-        // 从后往前遍历敌人数组，避免删除元素时索引错乱
-        for (let i = this.enemies.length - 1; i >= 0; i--) {
-            const enemy = this.enemies[i];
-            enemy.y += enemy.speed;  // 敌人向下移动
-            
-            // 敌人射击逻辑
-            const now = Date.now();
-            if (now - enemy.lastShot > enemy.fireRate) {  // 检查是否到了射击时间
-                this.enemyShoot(enemy);  // 敌人射击
-                enemy.lastShot = now;    // 更新上次射击时间
-            }
-            
-            // 移除超出屏幕底部的敌人
-            if (enemy.y > this.height) {
-                this.enemies.splice(i, 1);  // 从数组中删除敌人
-            }
-        }
+    if (gameState.gamepadConnected && gameState.gamepad && gameState.gamepad.buttons[7]?.pressed) {
+        shouldSpecialShot = true;
     }
     
-    /**
-     * 敌人射击方法
-     * 创建敌人子弹对象
-     * @param {Object} enemy - 射击的敌人对象
-     */
-    enemyShoot(enemy) {
-        this.enemyBullets.push({
-            x: enemy.x + enemy.width / 2 - 2,  // 子弹水平位置（敌人中心）
-            y: enemy.y + enemy.height,         // 子弹垂直位置（敌人底部）
-            width: 4,                          // 子弹宽度
-            height: 8,                         // 子弹高度
-            speed: 4,                          // 子弹速度
-            color: '#ff6b6b',                  // 子弹颜色（红色）
-            damage: 15                         // 子弹伤害
-        });
-    }
-    
-    /**
-     * 更新玩家子弹
-     * 移动子弹并移除超出屏幕的子弹
-     */
-    updateBullets() {
-        this.bullets = this.bullets.filter(bullet => {
-            if (bullet.isSpecial) {
-                // 特殊子弹（激光）处理
-                bullet.life--;
-                return bullet.life > 0;  // 激光持续时间结束后移除
-            } else {
-                // 普通子弹处理
-                bullet.y -= bullet.speed;  // 向上移动
-                return bullet.y > -bullet.height;  // 移除超出屏幕的子弹
-            }
-        });
-    }
-    
-    /**
-     * 更新敌人子弹
-     * 移动敌人子弹并移除超出屏幕的子弹
-     */
-    updateEnemyBullets() {
-        // 从后往前遍历敌人子弹数组，避免删除元素时索引错乱
-        for (let i = this.enemyBullets.length - 1; i >= 0; i--) {
-            const bullet = this.enemyBullets[i];
-            bullet.y += bullet.speed;  // 敌人子弹向下移动
-            
-            // 移除超出屏幕底部的子弹
-            if (bullet.y > this.height) {
-                this.enemyBullets.splice(i, 1);  // 从数组中删除子弹
-            }
-        }
-    }
-    
-    /**
-     * 更新爆炸效果
-     * 减少爆炸效果的生命周期并移除已结束的爆炸
-     */
-    updateExplosions() {
-        // 从后往前遍历爆炸数组，避免删除元素时索引错乱
-        for (let i = this.explosions.length - 1; i >= 0; i--) {
-            const explosion = this.explosions[i];
-            explosion.life--;  // 减少爆炸效果的生命周期
-            
-            // 移除生命周期结束的爆炸效果
-            if (explosion.life <= 0) {
-                this.explosions.splice(i, 1);  // 从数组中删除爆炸效果
-            }
-        }
-    }
-    
-    /**
-     * 更新道具
-     * 移动道具并移除超出屏幕的道具
-     */
-    updatePowerUps() {
-        // 从后往前遍历道具数组，避免删除元素时索引错乱
-        for (let i = this.powerUps.length - 1; i >= 0; i--) {
-            const powerUp = this.powerUps[i];
-            powerUp.y += 2;  // 道具向下移动
-            
-            // 移除超出屏幕底部的道具
-            if (powerUp.y > this.height) {
-                this.powerUps.splice(i, 1);  // 从数组中删除道具
-            }
-        }
-    }
-    
-    /**
-     * 碰撞检测方法
-     * 检测各种游戏对象之间的碰撞并处理相应的游戏逻辑
-     */
-    checkCollisions() {
-        // 玩家子弹与敌人碰撞检测
-        for (let i = this.bullets.length - 1; i >= 0; i--) {
-            const bullet = this.bullets[i];
-            for (let j = this.enemies.length - 1; j >= 0; j--) {
-                const enemy = this.enemies[j];
-                if (this.isColliding(bullet, enemy)) {  // 检查子弹和敌人是否碰撞
-                    enemy.health -= bullet.damage;      // 减少敌人血量
-                    this.bullets.splice(i, 1);          // 移除子弹
-                    
-                    // 检查敌人是否被击毁
-                    if (enemy.health <= 0) {
-                        this.score += enemy.points;     // 增加得分
-                        this.levelEnemiesKilled++;      // 增加击杀敌人数
-                        this.createExplosion(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2);  // 创建爆炸效果
-                        this.enemies.splice(j, 1);      // 移除敌人
-                        
-                        // 随机掉落道具（10%概率）
-                        if (Math.random() < 0.1) {
-                            this.powerUps.push({
-                                x: enemy.x + enemy.width / 2 - 10,  // 道具水平位置
-                                y: enemy.y + enemy.height / 2,      // 道具垂直位置
-                                width: 20,                          // 道具宽度
-                                height: 20,                         // 道具高度
-                                type: 'power'                       // 道具类型
-                            });
-                        }
-                    }
-                    break;  // 一颗子弹只能击中一个敌人
-                }
-            }
-        }
-        
-        // 敌人子弹与玩家碰撞检测
-        for (let i = this.enemyBullets.length - 1; i >= 0; i--) {
-            const bullet = this.enemyBullets[i];
-            if (this.isColliding(bullet, this.player)) {  // 检查敌人子弹和玩家是否碰撞
-                this.player.health -= bullet.damage;      // 减少玩家血量
-                this.enemyBullets.splice(i, 1);           // 移除敌人子弹
-                
-                // 检查玩家是否死亡
-                if (this.player.health <= 0) {
-                    this.lives--;                         // 减少生命值
-                    this.player.health = this.player.maxHealth;  // 恢复玩家血量
-                    
-                    // 检查游戏是否结束
-                    if (this.lives <= 0) {
-                        this.gameOver();  // 游戏结束
-                    }
-                }
-            }
-        }
-        
-        // 玩家与敌人碰撞检测
-        for (let i = this.enemies.length - 1; i >= 0; i--) {
-            const enemy = this.enemies[i];
-            if (this.isColliding(this.player, enemy)) {  // 检查玩家和敌人是否碰撞
-                this.lives--;                            // 减少生命值
-                this.createExplosion(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2);  // 创建爆炸效果
-                this.enemies.splice(i, 1);               // 移除敌人
-                
-                // 检查游戏是否结束
-                if (this.lives <= 0) {
-                    this.gameOver();  // 游戏结束
-                }
-            }
-        }
-        
-        // 玩家与道具碰撞检测
-        for (let i = this.powerUps.length - 1; i >= 0; i--) {
-            const powerUp = this.powerUps[i];
-            if (this.isColliding(this.player, powerUp)) {  // 检查玩家和道具是否碰撞
-                this.powerLevel++;                        // 增加火力等级
-                this.powerUps.splice(i, 1);               // 移除道具
-            }
-        }
-    }
-    
-    /**
-     * 矩形碰撞检测方法
-     * 检测两个矩形对象是否发生碰撞
-     * @param {Object} rect1 - 第一个矩形对象（包含x, y, width, height属性）
-     * @param {Object} rect2 - 第二个矩形对象（包含x, y, width, height属性）
-     * @returns {boolean} 是否发生碰撞
-     */
-    isColliding(rect1, rect2) {
-        return rect1.x < rect2.x + rect2.width &&    // 矩形1的左边界 < 矩形2的右边界
-               rect1.x + rect1.width > rect2.x &&    // 矩形1的右边界 > 矩形2的左边界
-               rect1.y < rect2.y + rect2.height &&   // 矩形1的上边界 < 矩形2的下边界
-               rect1.y + rect1.height > rect2.y;     // 矩形1的下边界 > 矩形2的上边界
-    }
-    
-    /**
-     * 创建爆炸效果
-     * 在指定位置创建爆炸动画效果
-     * @param {number} x - 爆炸效果的水平位置
-     * @param {number} y - 爆炸效果的垂直位置
-     */
-    createExplosion(x, y) {
-        this.explosions.push({
-            x: x,           // 爆炸效果的水平位置
-            y: y,           // 爆炸效果的垂直位置
-            life: 10,       // 爆炸效果的生命周期
-            maxLife: 10     // 爆炸效果的最大生命周期
-        });
-    }
-    
-    /**
-     * 检查关卡是否完成
-     * 当击杀敌人数达到要求时触发关卡完成
-     */
-    checkLevelComplete() {
-        if (this.levelEnemiesKilled >= this.levelEnemiesRequired) {
-            this.levelComplete();  // 触发关卡完成
-        }
-    }
-    
-    /**
-     * 关卡完成处理
-     * 显示关卡完成界面
-     */
-    levelComplete() {
-        if (this.level === 10) {
-            // 第10关完成后显示游戏通关界面
-            this.gameState = 'gameComplete';
-            document.getElementById('finalScoreComplete').textContent = this.score;
-            document.getElementById('gameComplete').classList.remove('hidden');
-        } else {
-            // 其他关卡显示关卡完成界面
-            this.gameState = 'levelComplete';
-            document.getElementById('levelComplete').classList.remove('hidden');
-        }
-    }
-    
-    /**
-     * 游戏结束处理
-     * 显示游戏结束界面并显示最终得分
-     */
-    gameOver() {
-        this.gameState = 'gameOver';  // 设置游戏状态为游戏结束
-        document.getElementById('finalScore').textContent = this.score;  // 显示最终得分
-        document.getElementById('gameOver').classList.remove('hidden');  // 显示游戏结束界面
-    }
-    
-    /**
-     * 更新用户界面
-     * 更新屏幕上显示的游戏信息（得分、关卡、生命值、火力等级）
-     */
-    updateUI() {
-        document.getElementById('scoreValue').textContent = this.score;      // 更新得分显示
-        document.getElementById('levelValue').textContent = this.level;      // 更新关卡显示
-        document.getElementById('livesValue').textContent = this.lives;      // 更新生命值显示
-        document.getElementById('powerValue').textContent = this.powerLevel; // 更新火力等级显示
-    }
-    
-    /**
-     * 游戏渲染方法
-     * 绘制所有游戏对象到画布上
-     */
-    render() {
-        // 清空画布：使用半透明颜色创建拖尾效果
-        this.ctx.fillStyle = 'rgba(12, 20, 69, 0.1)';
-        this.ctx.fillRect(0, 0, this.width, this.height);
-        
-        // 绘制背景星星
-        this.drawStars();
-        
-        // 绘制玩家飞机
-        this.drawPlayer();
-        
-        // 绘制敌人
-        this.drawEnemies();
-        
-        // 绘制玩家子弹
-        this.drawBullets();
-        
-        // 绘制敌人子弹
-        this.drawEnemyBullets();
-        
-        // 绘制爆炸效果
-        this.drawExplosions();
-        
-        // 绘制道具
-        this.drawPowerUps();
-        
-        // 绘制玩家血条
-        this.drawHealthBar();
-    }
-    
-    /**
-     * 绘制背景星星
-     * 创建动态的星空背景效果
-     */
-    drawStars() {
-        this.ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';  // 半透明白色
-        for (let i = 0; i < 50; i++) {
-            const x = (i * 37) % this.width;                    // 星星水平位置
-            const y = (i * 73 + Date.now() * 0.01) % this.height; // 星星垂直位置（随时间移动）
-            this.ctx.fillRect(x, y, 1, 1);                      // 绘制1x1像素的星星
-        }
-    }
-    
-    /**
-     * 绘制玩家飞机
-     * 绘制玩家的三角形飞机造型
-     */
-    drawPlayer() {
-        const x = this.player.x + this.player.width / 2;   // 飞机中心水平位置
-        const y = this.player.y + this.player.height;      // 飞机底部垂直位置
-        const size = this.player.width / 2;                // 飞机大小
-        
-        // 绘制飞机主体（三角形）
-        this.ctx.fillStyle = this.player.color;            // 设置飞机颜色
-        this.ctx.beginPath();
-        this.ctx.moveTo(x, y - this.player.height);        // 三角形顶点
-        this.ctx.lineTo(x - size, y);                      // 左下角
-        this.ctx.lineTo(x + size, y);                      // 右下角
-        this.ctx.closePath();
-        this.ctx.fill();
-        
-        // 绘制飞机细节（内部白色三角形）
-        this.ctx.fillStyle = '#ffffff';                    // 白色
-        this.ctx.beginPath();
-        this.ctx.moveTo(x, y - this.player.height + 5);    // 内部三角形顶点
-        this.ctx.lineTo(x - size + 5, y - 5);              // 内部左下角
-        this.ctx.lineTo(x + size - 5, y - 5);              // 内部右下角
-        this.ctx.closePath();
-        this.ctx.fill();
-        
-        // 绘制飞机引擎（红色矩形）
-        this.ctx.fillStyle = '#ff6b6b';                    // 红色
-        this.ctx.fillRect(x - 3, y - 8, 6, 8);             // 引擎位置和大小
-    }
-    
-    /**
-     * 绘制敌人
-     * 绘制所有敌人飞机，包括血条显示
-     */
-    drawEnemies() {
-        this.enemies.forEach(enemy => {
-            const x = enemy.x + enemy.width / 2;   // 敌人中心水平位置
-            const y = enemy.y;                     // 敌人顶部垂直位置
-            const size = enemy.width / 2;          // 敌人大小
-            
-            // 绘制敌人飞机主体（倒三角形）
-            this.ctx.fillStyle = enemy.color;      // 设置敌人颜色
-            this.ctx.beginPath();
-            this.ctx.moveTo(x, y + enemy.height);  // 三角形顶点（底部）
-            this.ctx.lineTo(x - size, y);          // 左上角
-            this.ctx.lineTo(x + size, y);          // 右上角
-            this.ctx.closePath();
-            this.ctx.fill();
-            
-            // 绘制敌人飞机细节（内部白色三角形）
-            this.ctx.fillStyle = '#ffffff';        // 白色
-            this.ctx.beginPath();
-            this.ctx.moveTo(x, y + enemy.height - 5);  // 内部三角形顶点
-            this.ctx.lineTo(x - size + 5, y + 5);      // 内部左上角
-            this.ctx.lineTo(x + size - 5, y + 5);      // 内部右上角
-            this.ctx.closePath();
-            this.ctx.fill();
-            
-            // 绘制敌人血条
-            const healthPercent = enemy.health / enemy.maxHealth;  // 计算血量百分比
-            this.ctx.fillStyle = '#ff0000';                        // 红色背景
-            this.ctx.fillRect(enemy.x, enemy.y - 8, enemy.width, 4);  // 血条背景
-            this.ctx.fillStyle = '#00ff00';                        // 绿色血量
-            this.ctx.fillRect(enemy.x, enemy.y - 8, enemy.width * healthPercent, 4);  // 当前血量
-        });
-    }
-    
-    /**
-     * 绘制玩家子弹
-     * 绘制所有玩家发射的子弹，带有发光效果
-     */
-    drawBullets() {
-        this.bullets.forEach(bullet => {
-            // 绘制激光束效果
-            this.ctx.fillStyle = bullet.color;  // 设置子弹颜色
-            this.ctx.fillRect(bullet.x, bullet.y, bullet.width, bullet.height);  // 绘制子弹主体
-            
-            // 添加发光效果
-            this.ctx.shadowColor = bullet.color;  // 设置阴影颜色
-            this.ctx.shadowBlur = 5;              // 设置阴影模糊度
-            this.ctx.fillRect(bullet.x, bullet.y, bullet.width, bullet.height);  // 重新绘制以产生发光效果
-            this.ctx.shadowBlur = 0;              // 重置阴影模糊度
-        });
-    }
-    
-    /**
-     * 绘制敌人子弹
-     * 绘制所有敌人发射的子弹，带有发光效果
-     */
-    drawEnemyBullets() {
-        this.enemyBullets.forEach(bullet => {
-            // 绘制敌人激光束效果
-            this.ctx.fillStyle = bullet.color;  // 设置子弹颜色
-            this.ctx.fillRect(bullet.x, bullet.y, bullet.width, bullet.height);  // 绘制子弹主体
-            
-            // 添加发光效果
-            this.ctx.shadowColor = bullet.color;  // 设置阴影颜色
-            this.ctx.shadowBlur = 5;              // 设置阴影模糊度
-            this.ctx.fillRect(bullet.x, bullet.y, bullet.width, bullet.height);  // 重新绘制以产生发光效果
-            this.ctx.shadowBlur = 0;              // 重置阴影模糊度
-        });
-    }
-    
-    /**
-     * 绘制爆炸效果
-     * 绘制所有爆炸动画效果，包括光环、核心和粒子
-     */
-    drawExplosions() {
-        this.explosions.forEach(explosion => {
-            const alpha = explosion.life / explosion.maxLife;  // 计算透明度
-            const size = (explosion.maxLife - explosion.life) * 4;  // 计算爆炸大小
-            
-            // 绘制爆炸光环（外圈）
-            this.ctx.fillStyle = `rgba(255, 100, 0, ${alpha * 0.3})`;  // 橙色半透明
-            this.ctx.beginPath();
-            this.ctx.arc(explosion.x, explosion.y, size, 0, 2 * Math.PI);  // 绘制圆形
-            this.ctx.fill();
-            
-            // 绘制爆炸核心（内圈）
-            this.ctx.fillStyle = `rgba(255, 200, 0, ${alpha})`;  // 黄色
-            this.ctx.beginPath();
-            this.ctx.arc(explosion.x, explosion.y, size * 0.5, 0, 2 * Math.PI);  // 绘制较小的圆形
-            this.ctx.fill();
-            
-            // 绘制爆炸粒子（8个方向的粒子）
-            for (let i = 0; i < 8; i++) {
-                const angle = (i * Math.PI * 2) / 8;  // 计算粒子角度
-                const particleX = explosion.x + Math.cos(angle) * size * 0.8;  // 粒子水平位置
-                const particleY = explosion.y + Math.sin(angle) * size * 0.8;  // 粒子垂直位置
-                
-                this.ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;  // 白色粒子
-                this.ctx.fillRect(particleX - 1, particleY - 1, 2, 2);  // 绘制2x2像素的粒子
-            }
-        });
-    }
-    
-    /**
-     * 绘制道具
-     * 绘制所有道具，使用五角星形状
-     */
-    drawPowerUps() {
-        this.powerUps.forEach(powerUp => {
-            const x = powerUp.x + powerUp.width / 2;   // 道具中心水平位置
-            const y = powerUp.y + powerUp.height / 2;  // 道具中心垂直位置
-            const size = powerUp.width / 2;            // 道具大小
-            
-            // 绘制星星形状的道具
-            this.ctx.fillStyle = '#ffff00';            // 黄色
-            this.ctx.beginPath();
-            for (let i = 0; i < 5; i++) {
-                const angle = (i * 2 * Math.PI) / 5 - Math.PI / 2;  // 计算外角点角度
-                const outerX = x + Math.cos(angle) * size;          // 外角点水平位置
-                const outerY = y + Math.sin(angle) * size;          // 外角点垂直位置
-                
-                if (i === 0) {
-                    this.ctx.moveTo(outerX, outerY);  // 移动到第一个点
-                } else {
-                    this.ctx.lineTo(outerX, outerY);  // 连接到外角点
-                }
-                
-                const innerAngle = angle + Math.PI / 5;  // 计算内角点角度
-                const innerX = x + Math.cos(innerAngle) * (size * 0.5);  // 内角点水平位置
-                const innerY = y + Math.sin(innerAngle) * (size * 0.5);  // 内角点垂直位置
-                this.ctx.lineTo(innerX, innerY);  // 连接到内角点
-            }
-            this.ctx.closePath();
-            this.ctx.fill();
-            
-            // 添加发光效果
-            this.ctx.shadowColor = '#ffff00';  // 黄色阴影
-            this.ctx.shadowBlur = 10;          // 阴影模糊度
-            this.ctx.fill();                   // 重新填充以产生发光效果
-            this.ctx.shadowBlur = 0;           // 重置阴影模糊度
-        });
-    }
-    
-    /**
-     * 绘制玩家血条
-     * 在屏幕底部显示玩家的血量状态
-     */
-    drawHealthBar() {
-        const barWidth = 200;   // 血条宽度
-        const barHeight = 10;   // 血条高度
-        const x = (this.width - barWidth) / 2;  // 血条水平位置（居中）
-        const y = this.height - 20;             // 血条垂直位置（底部）
-        
-        // 绘制血条背景（红色）
-        this.ctx.fillStyle = '#ff0000';
-        this.ctx.fillRect(x, y, barWidth, barHeight);
-        
-        // 绘制当前血量（绿色）
-        const healthPercent = this.player.health / this.player.maxHealth;  // 计算血量百分比
-        this.ctx.fillStyle = '#00ff00';
-        this.ctx.fillRect(x, y, barWidth * healthPercent, barHeight);
-        
-        // 绘制血条边框（白色）
-        this.ctx.strokeStyle = '#ffffff';
-        this.ctx.lineWidth = 2;
-        this.ctx.strokeRect(x, y, barWidth, barHeight);
-    }
-    
-    /**
-     * 游戏主循环
-     * 持续更新游戏状态和渲染画面，实现60FPS的游戏体验
-     */
-    gameLoop() {
-        this.update();      // 更新游戏逻辑
-        this.render();      // 渲染游戏画面
-        this.updateUI();    // 更新用户界面
-        requestAnimationFrame(() => this.gameLoop());  // 请求下一帧动画
+    if (shouldSpecialShot && currentTime - gameState.lastSpecialShot > specialShotCooldown) {
+        specialShot();
+        gameState.lastSpecialShot = currentTime;
     }
 }
 
-/**
- * 游戏启动代码
- * 当页面加载完成后自动创建游戏实例
- */
-window.addEventListener('load', () => {
-    new Game();  // 创建新的游戏实例
-}); 
+// ==================== 射击系统 ====================
+function shoot() {
+    const now = Date.now();
+    if (now - gameState.lastShot > 200 - (gameState.powerLevel - 1) * 20) {
+        const bulletWidth = 3;
+        const bulletHeight = 15;
+        const bulletSpeed = 8;
+        const bulletDamage = 15 + (gameState.powerLevel - 1) * 8; // 修复：添加伤害属性
+        
+        if (gameState.powerLevel === 1) {
+            gameState.bullets.push({
+                x: gameState.player.x + gameState.player.width / 2 - bulletWidth / 2,
+                y: gameState.player.y,
+                width: bulletWidth,
+                height: bulletHeight,
+                speed: bulletSpeed,
+                color: '#00ffff',
+                damage: bulletDamage // 修复：添加伤害属性
+            });
+        } else if (gameState.powerLevel === 2) {
+            gameState.bullets.push(
+                {
+                    x: gameState.player.x + gameState.player.width / 2 - bulletWidth / 2 - 5,
+                    y: gameState.player.y,
+                    width: bulletWidth,
+                    height: bulletHeight,
+                    speed: bulletSpeed,
+                    color: '#00ffff',
+                    damage: bulletDamage
+                },
+                {
+                    x: gameState.player.x + gameState.player.width / 2 - bulletWidth / 2 + 5,
+                    y: gameState.player.y,
+                    width: bulletWidth,
+                    height: bulletHeight,
+                    speed: bulletSpeed,
+                    color: '#00ffff',
+                    damage: bulletDamage
+                }
+            );
+        } else if (gameState.powerLevel >= 3) {
+            gameState.bullets.push(
+                {
+                    x: gameState.player.x + gameState.player.width / 2 - bulletWidth / 2,
+                    y: gameState.player.y,
+                    width: bulletWidth,
+                    height: bulletHeight,
+                    speed: bulletSpeed,
+                    color: '#00ffff',
+                    damage: bulletDamage
+                },
+                {
+                    x: gameState.player.x + gameState.player.width / 2 - bulletWidth / 2 - 8,
+                    y: gameState.player.y + 5,
+                    width: bulletWidth,
+                    height: bulletHeight,
+                    speed: bulletSpeed,
+                    color: '#00ffff',
+                    damage: bulletDamage
+                },
+                {
+                    x: gameState.player.x + gameState.player.width / 2 - bulletWidth / 2 + 8,
+                    y: gameState.player.y + 5,
+                    width: bulletWidth,
+                    height: bulletHeight,
+                    speed: bulletSpeed,
+                    color: '#00ffff',
+                    damage: bulletDamage
+                }
+            );
+        }
+        
+        gameState.lastShot = now;
+    }
+}
+
+function specialShot() {
+    // 修复：还原为加强型子弹而不是水平激光
+    const bulletCount = Math.min(gameState.powerLevel * 2, 8); // 发射更多子弹
+    const spread = (bulletCount - 1) * 8;
+    
+    for (let i = 0; i < bulletCount; i++) {
+        const offset = (i - (bulletCount - 1) / 2) * spread;
+        gameState.bullets.push({
+            x: gameState.player.x + gameState.player.width / 2 - 2 + offset,
+            y: gameState.player.y,
+            width: 4,
+            height: 20, // 更长的子弹
+            speed: 12, // 更快的速度
+            color: '#ff00ff', // 特殊颜色
+            damage: 30 + (gameState.powerLevel - 1) * 10, // 更高伤害
+            isSpecial: true
+        });
+    }
+}
+
+function updateBullets() {
+    gameState.bullets = gameState.bullets.filter(bullet => {
+        if (bullet.isSpecial) {
+            // 特殊子弹处理
+            bullet.y -= bullet.speed;
+            return bullet.y > -bullet.height;
+        } else {
+            // 普通子弹处理
+            bullet.y -= bullet.speed;
+            return bullet.y > -bullet.height;
+        }
+    });
+}
+
+// ==================== 关卡系统 ====================
+function loadLevelData() {
+    gameState.levelData = {
+        1: { enemies: ['fighter', 'bomber', 'scout'], spawnRate: 80, enemySpeed: 1.5 },
+        2: { enemies: ['fighter', 'bomber', 'scout', 'interceptor'], spawnRate: 75, enemySpeed: 1.6 },
+        3: { enemies: ['fighter', 'bomber', 'scout', 'interceptor', 'gunship'], spawnRate: 70, enemySpeed: 1.7 },
+        4: { enemies: ['fighter', 'bomber', 'scout', 'interceptor', 'gunship', 'destroyer'], spawnRate: 65, enemySpeed: 1.8 },
+        5: { enemies: ['fighter', 'bomber', 'scout', 'interceptor', 'gunship', 'destroyer', 'carrier'], spawnRate: 60, enemySpeed: 1.9 },
+        6: { enemies: ['fighter', 'bomber', 'scout', 'interceptor', 'gunship', 'destroyer', 'carrier', 'battleship'], spawnRate: 55, enemySpeed: 2.0 },
+        7: { enemies: ['fighter', 'bomber', 'scout', 'interceptor', 'gunship', 'destroyer', 'carrier', 'battleship', 'dreadnought'], spawnRate: 50, enemySpeed: 2.1 },
+        8: { enemies: ['fighter', 'bomber', 'scout', 'interceptor', 'gunship', 'destroyer', 'carrier', 'battleship', 'dreadnought', 'titan'], spawnRate: 45, enemySpeed: 2.2 },
+        9: { enemies: ['fighter', 'bomber', 'scout', 'interceptor', 'gunship', 'destroyer', 'carrier', 'battleship', 'dreadnought', 'titan'], spawnRate: 40, enemySpeed: 2.3 },
+        10: { enemies: ['fighter', 'bomber', 'scout', 'interceptor', 'gunship', 'destroyer', 'carrier', 'battleship', 'dreadnought', 'titan'], spawnRate: 35, enemySpeed: 2.5 },
+        11: { enemies: ['fighter'], spawnRate: 1000, enemySpeed: 1.0 }
+    };
+}
+
+// ==================== 游戏控制函数 ====================
+function startGame() {
+    gameState.gameState = 'playing';
+    document.getElementById('startScreen').classList.add('hidden');
+    resetLevel();
+}
+
+function restartGame() {
+    gameState.score = 0;
+    gameState.level = 1;
+    gameState.lives = 5;
+    gameState.powerLevel = 1;
+    gameState.gameState = 'playing';
+    
+    // 隐藏所有界面
+    document.getElementById('startScreen').classList.add('hidden');
+    document.getElementById('gameOver').classList.add('hidden');
+    document.getElementById('levelComplete').classList.add('hidden');
+    document.getElementById('gameComplete').classList.add('hidden');
+    
+    resetLevel();
+}
+
+function nextLevel() {
+    gameState.level++;
+    gameState.levelEnemiesKilled = 0;
+    
+    document.getElementById('levelComplete').classList.add('hidden');
+    
+    if (gameState.level <= 10) {
+        gameState.gameState = 'playing';
+        resetLevel();
+    } else {
+        gameState.gameState = 'gameComplete';
+        document.getElementById('gameComplete').classList.remove('hidden');
+    }
+}
+
+function resetLevel() {
+    gameState.enemies = [];
+    gameState.bullets = [];
+    gameState.enemyBullets = [];
+    gameState.explosions = [];
+    gameState.powerUps = [];
+    gameState.enemySpawnTimer = 0;
+    createPlayer();
+}
+
+// ==================== 游戏主循环 ====================
+function gameLoop() {
+    update();
+    render();
+    updateUI();
+    requestAnimationFrame(gameLoop);
+}
+
+function update() {
+    if (gameState.gameState !== 'playing') return;
+    
+    updatePlayer();
+    updateEnemies();
+    updateBullets();
+    updateEnemyBullets();
+    updateExplosions();
+    updatePowerUps();
+    checkCollisions();
+    spawnEnemies();
+    checkLevelComplete();
+}
+
+// ==================== 游戏启动 ====================
+window.addEventListener('load', initGame); 
