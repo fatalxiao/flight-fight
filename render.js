@@ -126,9 +126,6 @@ function drawBackground() {
     
     // 绘制太空碎片
     drawSpaceDebris();
-    
-    // 绘制动态光效
-    drawLightEffects();
 }
 
 function drawNebula() {
@@ -223,23 +220,6 @@ function drawSpaceDebris() {
     });
 }
 
-function drawLightEffects() {
-    const ctx = gameState.ctx;
-    const time = Date.now() * 0.001;
-    
-    // 只保留简单的动态光束，移除半透明圆形和水平移动的长方形
-    for (let i = 0; i < 2; i++) {
-        const x = (i * 400 + time * 30) % gameState.width;
-        const gradient = ctx.createLinearGradient(x, 0, x, gameState.height);
-        gradient.addColorStop(0, 'rgba(100, 150, 255, 0.05)');
-        gradient.addColorStop(0.5, 'rgba(100, 150, 255, 0.02)');
-        gradient.addColorStop(1, 'transparent');
-        
-        ctx.fillStyle = gradient;
-        ctx.fillRect(x - 30, 0, 60, gameState.height);
-    }
-}
-
 // ==================== 渲染系统 ====================
 
 function render() {
@@ -270,27 +250,67 @@ function drawPlayer() {
     const ctx = gameState.ctx;
     const player = gameState.player;
     
-    // 绘制玩家飞船
+    // 绘制玩家飞船主体
     ctx.fillStyle = player.color;
-    ctx.fillRect(player.x, player.y, player.width, player.height);
+    ctx.beginPath();
+    // 飞船头部
+    ctx.moveTo(player.x + player.width / 2, player.y);
+    // 飞船左侧
+    ctx.lineTo(player.x, player.y + player.height * 0.7);
+    ctx.lineTo(player.x + player.width * 0.2, player.y + player.height);
+    // 飞船底部
+    ctx.lineTo(player.x + player.width * 0.8, player.y + player.height);
+    // 飞船右侧
+    ctx.lineTo(player.x + player.width, player.y + player.height * 0.7);
+    ctx.closePath();
+    ctx.fill();
     
-    // 绘制飞船细节
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(player.x + 5, player.y + 5, player.width - 10, 5);
-    ctx.fillRect(player.x + 10, player.y + 15, player.width - 20, 5);
+    // 绘制飞船驾驶舱
+    ctx.fillStyle = '#87CEEB';
+    ctx.beginPath();
+    ctx.ellipse(player.x + player.width / 2, player.y + player.height * 0.3, player.width * 0.15, player.height * 0.2, 0, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // 绘制飞船细节线条
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    // 中央线条
+    ctx.moveTo(player.x + player.width / 2, player.y + player.height * 0.2);
+    ctx.lineTo(player.x + player.width / 2, player.y + player.height * 0.8);
+    // 侧边线条
+    ctx.moveTo(player.x + player.width * 0.3, player.y + player.height * 0.4);
+    ctx.lineTo(player.x + player.width * 0.3, player.y + player.height * 0.7);
+    ctx.moveTo(player.x + player.width * 0.7, player.y + player.height * 0.4);
+    ctx.lineTo(player.x + player.width * 0.7, player.y + player.height * 0.7);
+    ctx.stroke();
     
     // 绘制引擎火焰
+    const time = Date.now() * 0.01;
+    const flameSize = 8 + Math.sin(time) * 3;
     ctx.fillStyle = '#ff6b6b';
-    ctx.fillRect(player.x + 15, player.y + player.height, 10, 8);
+    ctx.beginPath();
+    ctx.moveTo(player.x + player.width * 0.3, player.y + player.height);
+    ctx.lineTo(player.x + player.width * 0.25, player.y + player.height + flameSize);
+    ctx.lineTo(player.x + player.width * 0.35, player.y + player.height + flameSize);
+    ctx.closePath();
+    ctx.fill();
+    
+    ctx.fillStyle = '#ff4500';
+    ctx.beginPath();
+    ctx.moveTo(player.x + player.width * 0.7, player.y + player.height);
+    ctx.lineTo(player.x + player.width * 0.65, player.y + player.height + flameSize * 0.8);
+    ctx.lineTo(player.x + player.width * 0.75, player.y + player.height + flameSize * 0.8);
+    ctx.closePath();
+    ctx.fill();
 }
 
 function drawEnemies() {
     const ctx = gameState.ctx;
     
     gameState.enemies.forEach(enemy => {
-        // 绘制敌人
-        ctx.fillStyle = enemy.color;
-        ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
+        // 根据敌人类型绘制不同的飞船设计
+        drawEnemyShip(ctx, enemy);
         
         // 绘制血条
         const healthBarWidth = enemy.width;
@@ -303,6 +323,234 @@ function drawEnemies() {
         ctx.fillStyle = '#00ff00';
         ctx.fillRect(enemy.x, enemy.y - 8, healthBarWidth * healthPercentage, healthBarHeight);
     });
+}
+
+function drawEnemyShip(ctx, enemy) {
+    const x = enemy.x;
+    const y = enemy.y;
+    const width = enemy.width;
+    const height = enemy.height;
+    
+    // 根据敌人类型选择不同的设计
+    switch (enemy.type) {
+        case 'fighter':
+            drawFighterShip(ctx, x, y, width, height, enemy.color);
+            break;
+        case 'bomber':
+            drawBomberShip(ctx, x, y, width, height, enemy.color);
+            break;
+        case 'scout':
+            drawScoutShip(ctx, x, y, width, height, enemy.color);
+            break;
+        case 'interceptor':
+            drawInterceptorShip(ctx, x, y, width, height, enemy.color);
+            break;
+        case 'gunship':
+            drawGunshipShip(ctx, x, y, width, height, enemy.color);
+            break;
+        case 'destroyer':
+            drawDestroyerShip(ctx, x, y, width, height, enemy.color);
+            break;
+        case 'carrier':
+            drawCarrierShip(ctx, x, y, width, height, enemy.color);
+            break;
+        case 'battleship':
+            drawBattleshipShip(ctx, x, y, width, height, enemy.color);
+            break;
+        case 'dreadnought':
+            drawDreadnoughtShip(ctx, x, y, width, height, enemy.color);
+            break;
+        case 'titan':
+            drawTitanShip(ctx, x, y, width, height, enemy.color);
+            break;
+        default:
+            drawFighterShip(ctx, x, y, width, height, enemy.color);
+    }
+}
+
+function drawFighterShip(ctx, x, y, width, height, color) {
+    // 战斗机 - 小型敏捷
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(x + width / 2, y + height);
+    ctx.lineTo(x, y + height * 0.3);
+    ctx.lineTo(x + width * 0.3, y);
+    ctx.lineTo(x + width * 0.7, y);
+    ctx.lineTo(x + width, y + height * 0.3);
+    ctx.closePath();
+    ctx.fill();
+    
+    // 驾驶舱
+    ctx.fillStyle = '#ff0000';
+    ctx.beginPath();
+    ctx.ellipse(x + width / 2, y + height * 0.4, width * 0.1, height * 0.15, 0, 0, Math.PI * 2);
+    ctx.fill();
+}
+
+function drawBomberShip(ctx, x, y, width, height, color) {
+    // 轰炸机 - 宽大厚重
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(x + width / 2, y + height);
+    ctx.lineTo(x + width * 0.1, y + height * 0.2);
+    ctx.lineTo(x + width * 0.2, y);
+    ctx.lineTo(x + width * 0.8, y);
+    ctx.lineTo(x + width * 0.9, y + height * 0.2);
+    ctx.closePath();
+    ctx.fill();
+    
+    // 炸弹舱
+    ctx.fillStyle = '#333333';
+    ctx.fillRect(x + width * 0.3, y + height * 0.3, width * 0.4, height * 0.4);
+}
+
+function drawScoutShip(ctx, x, y, width, height, color) {
+    // 侦察机 - 细长快速
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(x + width / 2, y + height);
+    ctx.lineTo(x + width * 0.2, y + height * 0.2);
+    ctx.lineTo(x + width * 0.4, y);
+    ctx.lineTo(x + width * 0.6, y);
+    ctx.lineTo(x + width * 0.8, y + height * 0.2);
+    ctx.closePath();
+    ctx.fill();
+    
+    // 传感器
+    ctx.fillStyle = '#00ffff';
+    ctx.beginPath();
+    ctx.ellipse(x + width / 2, y + height * 0.3, width * 0.08, height * 0.1, 0, 0, Math.PI * 2);
+    ctx.fill();
+}
+
+function drawInterceptorShip(ctx, x, y, width, height, color) {
+    // 拦截机 - 平衡型
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(x + width / 2, y + height);
+    ctx.lineTo(x + width * 0.15, y + height * 0.25);
+    ctx.lineTo(x + width * 0.35, y);
+    ctx.lineTo(x + width * 0.65, y);
+    ctx.lineTo(x + width * 0.85, y + height * 0.25);
+    ctx.closePath();
+    ctx.fill();
+    
+    // 武器系统
+    ctx.fillStyle = '#ffaa00';
+    ctx.fillRect(x + width * 0.2, y + height * 0.4, width * 0.6, height * 0.2);
+}
+
+function drawGunshipShip(ctx, x, y, width, height, color) {
+    // 炮舰 - 重型武器
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(x + width / 2, y + height);
+    ctx.lineTo(x + width * 0.05, y + height * 0.3);
+    ctx.lineTo(x + width * 0.25, y);
+    ctx.lineTo(x + width * 0.75, y);
+    ctx.lineTo(x + width * 0.95, y + height * 0.3);
+    ctx.closePath();
+    ctx.fill();
+    
+    // 主炮
+    ctx.fillStyle = '#666666';
+    ctx.fillRect(x + width * 0.4, y + height * 0.2, width * 0.2, height * 0.6);
+    
+    // 副炮
+    ctx.fillStyle = '#444444';
+    ctx.fillRect(x + width * 0.1, y + height * 0.4, width * 0.15, height * 0.3);
+    ctx.fillRect(x + width * 0.75, y + height * 0.4, width * 0.15, height * 0.3);
+}
+
+function drawDestroyerShip(ctx, x, y, width, height, color) {
+    // 驱逐舰 - 大型战舰
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(x + width / 2, y + height);
+    ctx.lineTo(x, y + height * 0.4);
+    ctx.lineTo(x + width * 0.2, y);
+    ctx.lineTo(x + width * 0.8, y);
+    ctx.lineTo(x + width, y + height * 0.4);
+    ctx.closePath();
+    ctx.fill();
+    
+    // 装甲板
+    ctx.fillStyle = '#333333';
+    ctx.fillRect(x + width * 0.1, y + height * 0.2, width * 0.8, height * 0.5);
+    
+    // 炮塔
+    ctx.fillStyle = '#555555';
+    ctx.fillRect(x + width * 0.3, y + height * 0.1, width * 0.4, height * 0.3);
+}
+
+function drawCarrierShip(ctx, x, y, width, height, color) {
+    // 航母 - 超大型
+    ctx.fillStyle = color;
+    ctx.fillRect(x, y, width, height);
+    
+    // 飞行甲板
+    ctx.fillStyle = '#222222';
+    ctx.fillRect(x + width * 0.1, y + height * 0.2, width * 0.8, height * 0.6);
+    
+    // 指挥塔
+    ctx.fillStyle = '#444444';
+    ctx.fillRect(x + width * 0.4, y + height * 0.1, width * 0.2, height * 0.4);
+}
+
+function drawBattleshipShip(ctx, x, y, width, height, color) {
+    // 战列舰 - 超重型
+    ctx.fillStyle = color;
+    ctx.fillRect(x, y, width, height);
+    
+    // 主炮塔
+    ctx.fillStyle = '#333333';
+    ctx.fillRect(x + width * 0.2, y + height * 0.1, width * 0.6, height * 0.4);
+    
+    // 副炮塔
+    ctx.fillStyle = '#555555';
+    ctx.fillRect(x + width * 0.05, y + height * 0.3, width * 0.2, height * 0.3);
+    ctx.fillRect(x + width * 0.75, y + height * 0.3, width * 0.2, height * 0.3);
+}
+
+function drawDreadnoughtShip(ctx, x, y, width, height, color) {
+    // 无畏舰 - 终极战舰
+    ctx.fillStyle = color;
+    ctx.fillRect(x, y, width, height);
+    
+    // 重型装甲
+    ctx.fillStyle = '#111111';
+    ctx.fillRect(x + width * 0.05, y + height * 0.1, width * 0.9, height * 0.7);
+    
+    // 超级炮塔
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(x + width * 0.15, y + height * 0.05, width * 0.7, height * 0.5);
+    
+    // 能量核心
+    ctx.fillStyle = '#ff0000';
+    ctx.beginPath();
+    ctx.ellipse(x + width / 2, y + height * 0.3, width * 0.1, height * 0.15, 0, 0, Math.PI * 2);
+    ctx.fill();
+}
+
+function drawTitanShip(ctx, x, y, width, height, color) {
+    // 泰坦 - Boss级
+    ctx.fillStyle = color;
+    ctx.fillRect(x, y, width, height);
+    
+    // 超级装甲
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(x + width * 0.02, y + height * 0.05, width * 0.96, height * 0.8);
+    
+    // 能量护盾
+    ctx.strokeStyle = '#00ffff';
+    ctx.lineWidth = 3;
+    ctx.strokeRect(x + width * 0.05, y + height * 0.1, width * 0.9, height * 0.7);
+    
+    // 核心能量
+    ctx.fillStyle = '#ffff00';
+    ctx.beginPath();
+    ctx.ellipse(x + width / 2, y + height * 0.25, width * 0.15, height * 0.2, 0, 0, Math.PI * 2);
+    ctx.fill();
 }
 
 function drawBullets() {

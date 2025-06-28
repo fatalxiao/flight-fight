@@ -35,8 +35,8 @@ body {
 
 /* 游戏画布样式：设置边框、圆角和背景 */
 #gameCanvas {
-    border: 3px solid #4a90e2; /* 蓝色边框 */
-    border-radius: 10px; /* 圆角边框 */
+    border: none; /* 移除蓝色边框 */
+    border-radius: 0; /* 移除圆角 */
     background: linear-gradient(to bottom, #0c1445 0%, #1a237e 50%, #0c1445 100%); /* 深蓝色渐变背景 */
     box-shadow: 0 0 20px rgba(74, 144, 226, 0.5); /* 发光阴影效果 */
 }
@@ -79,7 +79,7 @@ button:active {
 }
 
 /* 游戏结束、关卡完成和开始界面的通用样式 */
-#gameOver, #levelComplete, #startScreen, #gameComplete {
+#gameOver, #levelComplete, #gameComplete {
     position: absolute; /* 绝对定位 */
     top: 50%; /* 垂直居中 */
     left: 50%; /* 水平居中 */
@@ -89,6 +89,21 @@ button:active {
     border-radius: 15px; /* 圆角 */
     border: 2px solid #4a90e2; /* 蓝色边框 */
     box-shadow: 0 0 30px rgba(74, 144, 226, 0.8); /* 发光阴影 */
+    text-align: center; /* 文字居中 */
+    min-width: 300px; /* 最小宽度 */
+}
+
+/* 开始界面特殊样式 - 无边框无圆角 */
+#startScreen {
+    position: absolute; /* 绝对定位 */
+    top: 50%; /* 垂直居中 */
+    left: 50%; /* 水平居中 */
+    transform: translate(-50%, -50%); /* 精确居中定位 */
+    background: rgba(0, 0, 0, 0.9); /* 半透明黑色背景 */
+    padding: 30px; /* 内边距 */
+    border-radius: 0; /* 移除圆角 */
+    border: none; /* 移除边框 */
+    box-shadow: none; /* 移除阴影 */
     text-align: center; /* 文字居中 */
     min-width: 300px; /* 最小宽度 */
 }

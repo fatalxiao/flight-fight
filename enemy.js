@@ -41,16 +41,16 @@ const formationTypes = {
 
 // 波次配置
 const waveConfigs = {
-    1: { enemies: 20, formations: 3, enemyTypes: ['fighter', 'scout'] },
-    2: { enemies: 25, formations: 3, enemyTypes: ['fighter', 'scout', 'bomber'] },
-    3: { enemies: 30, formations: 4, enemyTypes: ['fighter', 'scout', 'bomber', 'interceptor'] },
-    4: { enemies: 35, formations: 4, enemyTypes: ['fighter', 'scout', 'bomber', 'interceptor', 'gunship'] },
-    5: { enemies: 40, formations: 5, enemyTypes: ['fighter', 'scout', 'bomber', 'interceptor', 'gunship', 'destroyer'] },
-    6: { enemies: 45, formations: 5, enemyTypes: ['fighter', 'scout', 'bomber', 'interceptor', 'gunship', 'destroyer', 'carrier'] },
-    7: { enemies: 50, formations: 6, enemyTypes: ['fighter', 'scout', 'bomber', 'interceptor', 'gunship', 'destroyer', 'carrier', 'battleship'] },
-    8: { enemies: 55, formations: 6, enemyTypes: ['fighter', 'scout', 'bomber', 'interceptor', 'gunship', 'destroyer', 'carrier', 'battleship', 'dreadnought'] },
-    9: { enemies: 60, formations: 7, enemyTypes: ['fighter', 'scout', 'bomber', 'interceptor', 'gunship', 'destroyer', 'carrier', 'battleship', 'dreadnought'] },
-    10: { enemies: 65, formations: 7, enemyTypes: ['fighter', 'scout', 'bomber', 'interceptor', 'gunship', 'destroyer', 'carrier', 'battleship', 'dreadnought', 'titan'] }
+    1: { enemies: 25, formations: 3, enemyTypes: ['fighter', 'scout'] },
+    2: { enemies: 30, formations: 3, enemyTypes: ['fighter', 'scout', 'bomber'] },
+    3: { enemies: 35, formations: 4, enemyTypes: ['fighter', 'scout', 'bomber', 'interceptor'] },
+    4: { enemies: 40, formations: 4, enemyTypes: ['fighter', 'scout', 'bomber', 'interceptor', 'gunship'] },
+    5: { enemies: 45, formations: 5, enemyTypes: ['fighter', 'scout', 'bomber', 'interceptor', 'gunship', 'destroyer'] },
+    6: { enemies: 50, formations: 5, enemyTypes: ['fighter', 'scout', 'bomber', 'interceptor', 'gunship', 'destroyer', 'carrier'] },
+    7: { enemies: 55, formations: 6, enemyTypes: ['fighter', 'scout', 'bomber', 'interceptor', 'gunship', 'destroyer', 'carrier', 'battleship'] },
+    8: { enemies: 60, formations: 6, enemyTypes: ['fighter', 'scout', 'bomber', 'interceptor', 'gunship', 'destroyer', 'carrier', 'battleship', 'dreadnought'] },
+    9: { enemies: 65, formations: 7, enemyTypes: ['fighter', 'scout', 'bomber', 'interceptor', 'gunship', 'destroyer', 'carrier', 'battleship', 'dreadnought'] },
+    10: { enemies: 70, formations: 7, enemyTypes: ['fighter', 'scout', 'bomber', 'interceptor', 'gunship', 'destroyer', 'carrier', 'battleship', 'dreadnought', 'titan'] }
 };
 
 function createEnemy(type) {
@@ -198,8 +198,8 @@ function createFormation(formationType, enemyType, count, startX, startY) {
             break;
             
         case formationTypes.square:
-            // 方形编队 - 中心位置使用正态分布
-            const squareCenterX = clampedNormalRandom(gameState.width / 2, gameState.width / 6, 100, gameState.width - 100);
+            // 方形编队 - 使用屏幕中央
+            const squareCenterX = gameState.width / 2;
             const sideLength = Math.ceil(Math.sqrt(count));
             for (let i = 0; i < count; i++) {
                 const enemy = createEnemy(enemyType);
@@ -212,8 +212,8 @@ function createFormation(formationType, enemyType, count, startX, startY) {
             break;
             
         case formationTypes.triangle:
-            // 三角形编队 - 中心位置使用正态分布
-            const triangleCenterX = clampedNormalRandom(gameState.width / 2, gameState.width / 6, 100, gameState.width - 100);
+            // 三角形编队 - 使用屏幕中央
+            const triangleCenterX = gameState.width / 2;
             let index = 0;
             for (let row = 0; row < 4 && index < count; row++) {
                 for (let col = 0; col <= row && index < count; col++) {
@@ -227,10 +227,10 @@ function createFormation(formationType, enemyType, count, startX, startY) {
             break;
             
         default: // random
-            // 随机编队 - 每个敌人位置都使用正态分布
+            // 随机编队 - 每个敌人位置都在屏幕中央附近
             for (let i = 0; i < count; i++) {
                 const enemy = createEnemy(enemyType);
-                enemy.x = clampedNormalRandom(gameState.width / 2, gameState.width / 4, 50, gameState.width - 50);
+                enemy.x = gameState.width / 2 + (Math.random() - 0.5) * 200;
                 enemy.y = startY + (Math.random() - 0.5) * 100;
                 enemies.push(enemy);
             }
@@ -252,8 +252,8 @@ function generateWave(waveNumber) {
         const enemyType = waveConfig.enemyTypes[Math.floor(Math.random() * waveConfig.enemyTypes.length)];
         const count = Math.min(enemiesPerFormation, waveConfig.enemies - enemies.length);
         
-        // 为每个编队设置不同的起始位置，使用正态分布
-        const startX = clampedNormalRandom(gameState.width / 2, gameState.width / 6, 100, gameState.width - 100);
+        // 为每个编队设置不同的起始位置，使用屏幕中央
+        const startX = gameState.width / 2;
         const startY = -100 - i * 50;
         
         const formationEnemies = createFormation(formationType, enemyType, count, startX, startY);
@@ -342,36 +342,57 @@ function updateEnemies() {
 function updateEnemyMovement(enemy) {
     const data = enemy.movementData;
     
+    // 记录原始位置用于边界检查
+    const originalX = enemy.x;
+    const originalY = enemy.y;
+    
     switch (enemy.movementPattern) {
         case movementPatterns.straight:
             enemy.y += enemy.speed;
             break;
             
         case movementPatterns.leftToRight:
-            enemy.x += enemy.speed * 1.5;
+            enemy.x += enemy.speed * 0.8;
             enemy.y += enemy.speed * 0.3;
+            // 限制左右移动范围
+            if (enemy.x < gameState.width * 0.1) enemy.x = gameState.width * 0.1;
+            if (enemy.x > gameState.width * 0.9) enemy.x = gameState.width * 0.9;
             break;
             
         case movementPatterns.rightToLeft:
-            enemy.x -= enemy.speed * 1.5;
+            enemy.x -= enemy.speed * 0.8;
             enemy.y += enemy.speed * 0.3;
+            // 限制左右移动范围
+            if (enemy.x < gameState.width * 0.1) enemy.x = gameState.width * 0.1;
+            if (enemy.x > gameState.width * 0.9) enemy.x = gameState.width * 0.9;
             break;
             
         case movementPatterns.diagonalLR:
-            enemy.x += enemy.speed * 0.8;
+            enemy.x += enemy.speed * 0.5;
             enemy.y += enemy.speed * 0.8;
+            // 限制左右移动范围
+            if (enemy.x < gameState.width * 0.1) enemy.x = gameState.width * 0.1;
+            if (enemy.x > gameState.width * 0.9) enemy.x = gameState.width * 0.9;
             break;
             
         case movementPatterns.diagonalRL:
-            enemy.x -= enemy.speed * 0.8;
+            enemy.x -= enemy.speed * 0.5;
             enemy.y += enemy.speed * 0.8;
+            // 限制左右移动范围
+            if (enemy.x < gameState.width * 0.1) enemy.x = gameState.width * 0.1;
+            if (enemy.x > gameState.width * 0.9) enemy.x = gameState.width * 0.9;
             break;
             
         case movementPatterns.circle:
             data.angle += 0.05;
+            // 确保圆形运动以屏幕中央为中心
+            if (!data.centerX) data.centerX = gameState.width / 2;
             enemy.x = data.centerX + Math.cos(data.angle) * data.radius;
             enemy.y = data.centerY + Math.sin(data.angle) * data.radius;
             data.centerY += enemy.speed * 0.3;
+            // 限制左右移动范围
+            if (enemy.x < gameState.width * 0.1) enemy.x = gameState.width * 0.1;
+            if (enemy.x > gameState.width * 0.9) enemy.x = gameState.width * 0.9;
             break;
             
         case movementPatterns.uTurn:
@@ -379,29 +400,47 @@ function updateEnemyMovement(enemy) {
             if (progress < 0.5) {
                 // 下降阶段
                 enemy.y += enemy.speed;
-                enemy.x += data.direction * enemy.speed * 0.5;
+                enemy.x += data.direction * enemy.speed * 0.3;
             } else {
                 // 上升阶段
                 enemy.y -= enemy.speed * 0.8;
-                enemy.x += data.direction * enemy.speed * 0.5;
+                enemy.x += data.direction * enemy.speed * 0.3;
             }
+            // 限制左右移动范围
+            if (enemy.x < gameState.width * 0.1) enemy.x = gameState.width * 0.1;
+            if (enemy.x > gameState.width * 0.9) enemy.x = gameState.width * 0.9;
             break;
             
         case movementPatterns.zigzag:
             enemy.y += enemy.speed;
+            // 确保之字形运动以屏幕中央为中心
+            if (!data.startX) data.startX = gameState.width / 2;
             enemy.x = data.startX + Math.sin(enemy.y * 0.02) * data.amplitude;
+            // 限制左右移动范围
+            if (enemy.x < gameState.width * 0.1) enemy.x = gameState.width * 0.1;
+            if (enemy.x > gameState.width * 0.9) enemy.x = gameState.width * 0.9;
             break;
             
         case movementPatterns.spiral:
             data.angle += 0.08;
+            // 确保螺旋运动以屏幕中央为中心
+            if (!data.centerX) data.centerX = gameState.width / 2;
             const spiralRadius = data.radius * (1 - enemy.y / gameState.height);
             enemy.x = data.centerX + Math.cos(data.angle) * spiralRadius;
             enemy.y += enemy.speed * 0.5;
+            // 限制左右移动范围
+            if (enemy.x < gameState.width * 0.1) enemy.x = gameState.width * 0.1;
+            if (enemy.x > gameState.width * 0.9) enemy.x = gameState.width * 0.9;
             break;
             
         case movementPatterns.wave:
             enemy.y += enemy.speed;
+            // 确保波浪运动以屏幕中央为中心
+            if (!data.startX) data.startX = gameState.width / 2;
             enemy.x = data.startX + Math.sin(enemy.y * data.frequency + data.phase) * data.amplitude;
+            // 限制左右移动范围
+            if (enemy.x < gameState.width * 0.1) enemy.x = gameState.width * 0.1;
+            if (enemy.x > gameState.width * 0.9) enemy.x = gameState.width * 0.9;
             break;
     }
 }

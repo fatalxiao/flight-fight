@@ -657,6 +657,7 @@ function levelComplete() {
         document.getElementById('gameComplete').classList.remove('hidden');
     } else {
         gameState.currentState = 'levelComplete';
+        document.getElementById('currentScore').textContent = gameState.score;
         document.getElementById('levelComplete').classList.remove('hidden');
     }
 }
@@ -757,7 +758,7 @@ function createAsteroid() {
 
 // 生成小行星
 function spawnAsteroid() {
-    if (Math.random() < 0.02) { // 2% 概率每帧生成小行星
+    if (Math.random() < 0.005) { // 0.5% 概率每帧生成小行星，减少陨石数量
         gameState.asteroids.push(createAsteroid());
     }
 }
