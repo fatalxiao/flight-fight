@@ -12,7 +12,7 @@
 </head>
 <body>
     <div class="game-container">
-        <canvas id="gameCanvas" width="1000" height="700"></canvas>
+        <canvas id="gameCanvas"></canvas>
         
         <!-- 开始界面 -->
         <div id="startScreen" class="screen">
@@ -108,13 +108,32 @@
             <p id="levelName">新手训练</p>
         </div>
         
-        <!-- 游戏UI -->
-        <div id="gameUI" class="game-ui">
-            <div class="score">分数: <span id="score">0</span></div>
-            <div class="level">关卡: <span id="level">1</span></div>
-            <div class="lives">生命: <span id="lives">8</span></div>
-            <div class="health">血量: <span id="health">200</span></div>
-            <div class="power">火力: <span id="power">1</span></div>
+        <!-- 游戏UI - 左上角 -->
+        <div id="gameUILeft" class="game-ui-left">
+            <div class="score">
+                <span class="label">分数:</span>
+                <span class="value" id="score">0</span>
+            </div>
+            <div class="level">
+                <span class="label">关卡:</span>
+                <span class="value" id="level">1</span>
+            </div>
+            <div class="lives">
+                <span class="label">生命:</span>
+                <span class="value" id="lives">❤️❤️❤️❤️❤️❤️❤️❤️</span>
+            </div>
+        </div>
+        
+        <!-- 游戏UI - 右上角 -->
+        <div id="gameUIRight" class="game-ui-right">
+            <div class="wave">
+                <span class="label">波次:</span>
+                <span class="value" id="wave">1</span>
+            </div>
+            <div class="power">
+                <span class="label">火力:</span>
+                <span class="value" id="power">⭐</span>
+            </div>
         </div>
     </div>
     

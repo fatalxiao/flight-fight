@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>全屏游戏测试</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #1e3c72;
+        }
+        .test-container {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+            background: linear-gradient(to bottom, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%);
+        }
+        .test-info {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px;
+            border-radius: 5px;
+            color: white;
+            font-size: 0.8em;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <!-- 游戏UI测试 -->
+        <div id="gameUI" class="game-ui">
+            <div class="score">
+                <span class="label">分数:</span>
+                <span class="value" id="score">12345</span>
+            </div>
+            <div class="level">
+                <span class="label">关卡:</span>
+                <span class="value" id="level">3</span>
+            </div>
+            <div class="lives">
+                <span class="label">生命:</span>
+                <span class="value" id="lives">❤️❤️❤️❤️❤️❤️❤️❤️</span>
+            </div>
+            <div class="health">
+                <span class="label">血量:</span>
+                <span class="value" id="health">150</span>
+                <div class="health-bar">
+                    <div class="health-bar-fill" id="healthBarFill" style="width: 75%"></div>
+                </div>
+            </div>
+            <div class="power">
+                <span class="label">火力:</span>
+                <span class="value" id="power">⭐⭐⭐</span>
+            </div>
+        </div>
+        
+        <!-- 关卡完成测试 -->
+        <div id="levelComplete" class="screen" style="display: flex;">
+            <h2>关卡完成！</h2>
+            <p>当前分数: 12,345</p>
+            <button id="nextLevelBtn">下一关</button>
+        </div>
+        
+        <!-- 测试信息 -->
+        <div class="test-info">
+            <p>屏幕尺寸: <span id="screenSize"></span></p>
+            <p>视口尺寸: <span id="viewportSize"></span></p>
+            <p>设备像素比: <span id="pixelRatio"></span></p>
+        </div>
+    </div>
+    
+    <script>
+        // 更新测试信息
+        function updateTestInfo() {
+            document.getElementById('screenSize').textContent = 
+                `${screen.width} x ${screen.height}`;
+            document.getElementById('viewportSize').textContent = 
+                `${window.innerWidth} x ${window.innerHeight}`;
+            document.getElementById('pixelRatio').textContent = 
+                window.devicePixelRatio;
+        }
+        
+        // 初始化
+        updateTestInfo();
+        window.addEventListener('resize', updateTestInfo);
+        
+        // 模拟血量变化
+        let health = 150;
+        const healthBar = document.getElementById('healthBarFill');
+        const healthText = document.getElementById('health');
+        
+        setInterval(() => {
+            health = Math.max(0, health - 10);
+            const percentage = (health / 200) * 100;
+            healthBar.style.width = `${percentage}%`;
+            healthText.textContent = health;
+            
+            if (health <= 0) {
+                health = 200;
+            }
+        }, 2000);
+        
+        // 模拟分数增加
+        let score = 12345;
+        const scoreElement = document.getElementById('score');
+        
+        setInterval(() => {
+            score += 100;
+            scoreElement.textContent = score.toLocaleString();
+        }, 1000);
+    </script>
+</body>
+</html> 

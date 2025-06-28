@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UI布局测试</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .test-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            overflow: hidden;
+        }
+        
+        .test-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <canvas class="test-canvas"></canvas>
+        
+        <!-- 游戏UI - 左上角 -->
+        <div class="game-ui-left">
+            <div class="score">
+                <span class="label">分数:</span>
+                <span class="value">12500</span>
+            </div>
+            <div class="level">
+                <span class="label">关卡:</span>
+                <span class="value">3</span>
+            </div>
+            <div class="lives">
+                <span class="label">生命:</span>
+                <span class="value">❤️❤️❤️❤️❤️❤️❤️❤️</span>
+            </div>
+        </div>
+        
+        <!-- 游戏UI - 右上角 -->
+        <div class="game-ui-right">
+            <div class="wave">
+                <span class="label">波次:</span>
+                <span class="value">3</span>
+            </div>
+            <div class="power">
+                <span class="label">火力:</span>
+                <span class="value">⭐⭐⭐</span>
+            </div>
+        </div>
+        
+        <div style="position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); color: white; text-align: center;">
+            <h2>UI布局测试</h2>
+            <p>左上角：分数、关卡、生命值</p>
+            <p>右上角：波次、火力等级</p>
+            <p>移除了重复的血量显示，UI更加简洁</p>
+        </div>
+    </div>
+</body>
+</html> 

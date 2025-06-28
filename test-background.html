@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>背景效果测试</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            font-family: Arial, sans-serif;
+        }
+        
+        .test-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        .test-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+        
+        .info-panel {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            max-width: 300px;
+        }
+        
+        .info-panel h2 {
+            margin-top: 0;
+            color: #4a90e2;
+        }
+        
+        .info-panel ul {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        
+        .info-panel li {
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <canvas class="test-canvas" id="backgroundCanvas"></canvas>
+        
+        <div class="info-panel">
+            <h2>背景效果测试</h2>
+            <p>新的背景系统包含以下元素：</p>
+            <ul>
+                <li>✨ 闪烁星星（100个）</li>
+                <li>🌟 星芒效果</li>
+                <li>🌌 彩色星云（8个）</li>
+                <li>☄️ 旋转小行星（15个）</li>
+                <li>🚀 太空碎片（25个）</li>
+                <li>💫 动态光束</li>
+                <li>⚡ 脉冲光点</li>
+            </ul>
+            <p>所有元素都有不同的移动速度和层次感，营造出丰富的太空环境。</p>
+        </div>
+    </div>
+
+    <script>
+        // 简化的背景测试代码
+        const canvas = document.getElementById('backgroundCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // 设置画布尺寸
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+        
+        // 背景层管理
+        const backgroundLayers = {
+            stars: { y: 0, speed: 0.3, elements: [] },
+            nebula: { y: 0, speed: 0.1, elements: [] },
+            asteroids: { y: 0, speed: 0.8, elements: [] },
+            spaceDebris: { y: 0, speed: 1.2, elements: [] }
+        };
+        
+        // 初始化背景元素
+        function initBackgroundElements() {
+            // 初始化星星
+            for (let i = 0; i < 100; i++) {
+                backgroundLayers.stars.elements.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    size: Math.random() * 3 + 1,
+                    brightness: Math.random() * 0.8 + 0.2,
+                    twinkleSpeed: Math.random() * 0.02 + 0.01
+                });
+            }
+            
+            // 初始化星云
+            for (let i = 0; i < 8; i++) {
+                backgroundLayers.nebula.elements.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    radius: Math.random() * 150 + 100,
+                    color: ['#ff6b9d', '#4a90e2', '#50c878', '#ffd700'][Math.floor(Math.random() * 4)],
+                    opacity: Math.random() * 0.3 + 0.1
+                });
+            }
+            
+            // 初始化小行星
+            for (let i = 0; i < 15; i++) {
+                backgroundLayers.asteroids.elements.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    size: Math.random() * 8 + 3,
+                    rotation: Math.random() * Math.PI * 2,
+                    rotationSpeed: (Math.random() - 0.5) * 0.02
+                });
+            }
+            
+            // 初始化太空碎片
+            for (let i = 0; i < 25; i++) {
+                backgroundLayers.spaceDebris.elements.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    width: Math.random() * 6 + 2,
+                    height: Math.random() * 6 + 2,
+                    rotation: Math.random() * Math.PI * 2,
+                    rotationSpeed: (Math.random() - 0.5) * 0.03
+                });
+            }
+        }
+        
+        function updateBackground() {
+            // 更新各层背景
+            Object.values(backgroundLayers).forEach(layer => {
+                layer.y += layer.speed;
+                if (layer.y >= canvas.height) {
+                    layer.y = 0;
+                }
+            });
+            
+            // 更新星星闪烁
+            backgroundLayers.stars.elements.forEach(star => {
+                star.y += backgroundLayers.stars.speed;
+                if (star.y > canvas.height) {
+                    star.y = -10;
+                    star.x = Math.random() * canvas.width;
+                }
+            });
+            
+            // 更新小行星
+            backgroundLayers.asteroids.elements.forEach(asteroid => {
+                asteroid.y += backgroundLayers.asteroids.speed;
+                asteroid.rotation += asteroid.rotationSpeed;
+                if (asteroid.y > canvas.height) {
+                    asteroid.y = -20;
+                    asteroid.x = Math.random() * canvas.width;
+                }
+            });
+            
+            // 更新太空碎片
+            backgroundLayers.spaceDebris.elements.forEach(debris => {
+                debris.y += backgroundLayers.spaceDebris.speed;
+                debris.rotation += debris.rotationSpeed;
+                if (debris.y > canvas.height) {
+                    debris.y = -15;
+                    debris.x = Math.random() * canvas.width;
+                }
+            });
+        }
+        
+        function drawBackground() {
+            // 创建深空渐变背景
+            const gradient = ctx.createRadialGradient(canvas.width/2, canvas.height/2, 0, canvas.width/2, canvas.height/2, Math.max(canvas.width, canvas.height)/2);
+            gradient.addColorStop(0, '#0a0a2a');
+            gradient.addColorStop(0.3, '#1a1a4a');
+            gradient.addColorStop(0.6, '#2a2a6a');
+            gradient.addColorStop(0.8, '#1a1a4a');
+            gradient.addColorStop(1, '#0a0a2a');
+            
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // 绘制星云
+            backgroundLayers.nebula.elements.forEach(nebula => {
+                const x = nebula.x;
+                const y = (nebula.y + backgroundLayers.nebula.y) % canvas.height;
+                
+                const gradient = ctx.createRadialGradient(x, y, 0, x, y, nebula.radius);
+                gradient.addColorStop(0, nebula.color + '40');
+                gradient.addColorStop(0.5, nebula.color + '20');
+                gradient.addColorStop(1, 'transparent');
+                
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.arc(x, y, nebula.radius, 0, Math.PI * 2);
+                ctx.fill();
+            });
+            
+            // 绘制星星
+            const time = Date.now() * 0.001;
+            backgroundLayers.stars.elements.forEach(star => {
+                const twinkle = 0.3 + 0.7 * Math.sin(time * star.twinkleSpeed);
+                const alpha = star.brightness * twinkle;
+                
+                ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+                ctx.beginPath();
+                ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // 添加星芒效果
+                if (star.size > 2) {
+                    ctx.strokeStyle = `rgba(255, 255, 255, ${alpha * 0.3})`;
+                    ctx.lineWidth = 1;
+                    ctx.beginPath();
+                    ctx.moveTo(star.x - star.size * 2, star.y);
+                    ctx.lineTo(star.x + star.size * 2, star.y);
+                    ctx.moveTo(star.x, star.y - star.size * 2);
+                    ctx.lineTo(star.x, star.y + star.size * 2);
+                    ctx.stroke();
+                }
+            });
+            
+            // 绘制小行星
+            backgroundLayers.asteroids.elements.forEach(asteroid => {
+                ctx.save();
+                ctx.translate(asteroid.x, asteroid.y);
+                ctx.rotate(asteroid.rotation);
+                
+                ctx.fillStyle = '#8B7355';
+                ctx.beginPath();
+                ctx.ellipse(0, 0, asteroid.size, asteroid.size * 0.7, 0, 0, Math.PI * 2);
+                ctx.fill();
+                
+                ctx.fillStyle = '#654321';
+                ctx.beginPath();
+                ctx.ellipse(0, asteroid.size * 0.3, asteroid.size * 0.8, asteroid.size * 0.5, 0, 0, Math.PI * 2);
+                ctx.fill();
+                
+                ctx.restore();
+            });
+            
+            // 绘制太空碎片
+            backgroundLayers.spaceDebris.elements.forEach(debris => {
+                ctx.save();
+                ctx.translate(debris.x, debris.y);
+                ctx.rotate(debris.rotation);
+                
+                ctx.fillStyle = '#C0C0C0';
+                ctx.fillRect(-debris.width/2, -debris.height/2, debris.width, debris.height);
+                
+                ctx.fillStyle = '#FFFFFF';
+                ctx.fillRect(-debris.width/2 + 1, -debris.height/2 + 1, debris.width * 0.3, debris.height * 0.3);
+                
+                ctx.restore();
+            });
+            
+            // 绘制动态光效
+            for (let i = 0; i < 3; i++) {
+                const x = (i * 300 + time * 50) % canvas.width;
+                const gradient = ctx.createLinearGradient(x, 0, x, canvas.height);
+                gradient.addColorStop(0, 'rgba(100, 150, 255, 0.1)');
+                gradient.addColorStop(0.5, 'rgba(100, 150, 255, 0.05)');
+                gradient.addColorStop(1, 'transparent');
+                
+                ctx.fillStyle = gradient;
+                ctx.fillRect(x - 50, 0, 100, canvas.height);
+            }
+            
+            // 绘制脉冲光点
+            for (let i = 0; i < 5; i++) {
+                const x = (i * 200) % canvas.width;
+                const y = (i * 150 + time * 30) % canvas.height;
+                const pulse = 0.5 + 0.5 * Math.sin(time * 2 + i);
+                
+                ctx.fillStyle = `rgba(255, 255, 255, ${pulse * 0.3})`;
+                ctx.beginPath();
+                ctx.arc(x, y, 20 + pulse * 10, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+        
+        function animate() {
+            updateBackground();
+            drawBackground();
+            requestAnimationFrame(animate);
+        }
+        
+        // 启动动画
+        initBackgroundElements();
+        animate();
+    </script>
+</body>
+</html> 

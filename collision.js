@@ -19,7 +19,6 @@ function checkCollisions() {
                 
                 if (enemy.health <= 0) {
                     gameState.score += enemy.points;
-                    gameState.levelEnemiesKilled++;
                     createExplosion(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2);
                     gameState.enemies.splice(j, 1);
                     
@@ -52,10 +51,10 @@ function checkCollisions() {
             gameState.enemyBullets.splice(i, 1);
             
             if (gameState.player.health <= 0) {
-                gameState.lives--;
+                gameState.player.lives--;
                 gameState.player.health = gameState.player.maxHealth;
                 
-                if (gameState.lives <= 0) {
+                if (gameState.player.lives <= 0) {
                     gameOver();
                 }
             }
@@ -66,11 +65,11 @@ function checkCollisions() {
     for (let i = gameState.enemies.length - 1; i >= 0; i--) {
         const enemy = gameState.enemies[i];
         if (isColliding(gameState.player, enemy)) {
-            gameState.lives--;
+            gameState.player.lives--;
             createExplosion(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2);
             gameState.enemies.splice(i, 1);
             
-            if (gameState.lives <= 0) {
+            if (gameState.player.lives <= 0) {
                 gameOver();
             }
         }
@@ -85,7 +84,7 @@ function checkCollisions() {
                 gameState.player.health = Math.min(gameState.player.maxHealth, gameState.player.health + 50);
             } else {
                 // 火力升级道具
-                gameState.powerLevel++;
+                gameState.player.powerLevel++;
             }
             gameState.powerUps.splice(i, 1);
         }
@@ -127,25 +126,8 @@ function updatePowerUps() {
 
 // ==================== 游戏状态检查 ====================
 
-function checkLevelComplete() {
-    if (gameState.levelEnemiesKilled >= gameState.levelEnemiesRequired) {
-        levelComplete();
-    }
-}
-
-function levelComplete() {
-    if (gameState.level === 10) {
-        gameState.gameState = 'gameComplete';
-        document.getElementById('finalScoreComplete').textContent = gameState.score;
-        document.getElementById('gameComplete').classList.remove('hidden');
-    } else {
-        gameState.gameState = 'levelComplete';
-        document.getElementById('levelComplete').classList.remove('hidden');
-    }
-}
-
 function gameOver() {
-    gameState.gameState = 'gameOver';
+    gameState.currentState = 'gameOver';
     document.getElementById('finalScore').textContent = gameState.score;
     document.getElementById('gameOver').classList.remove('hidden');
 } 

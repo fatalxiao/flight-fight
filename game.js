@@ -10,8 +10,6 @@ let gameState = {
     // 游戏核心数据
     score: 0,
     level: 1,
-    lives: 8,
-    powerLevel: 1,
     
     // 游戏对象数组
     player: null,
@@ -20,6 +18,7 @@ let gameState = {
     enemyBullets: [],
     explosions: [],
     powerUps: [],
+    asteroids: [],
     
     // 输入控制
     keys: {},
@@ -53,8 +52,15 @@ function initGame() {
     // 获取画布和上下文
     gameState.canvas = document.getElementById('gameCanvas');
     gameState.ctx = gameState.canvas.getContext('2d');
-    gameState.width = gameState.canvas.width;
-    gameState.height = gameState.canvas.height;
+    
+    // 设置画布为全屏尺寸
+    resizeCanvas();
+    
+    // 监听窗口大小变化
+    window.addEventListener('resize', resizeCanvas);
+    
+    // 初始化背景元素
+    initBackgroundElements();
     
     // 初始化游戏
     setupEventListeners();
@@ -66,6 +72,30 @@ function initGame() {
     
     // 开始游戏循环
     gameLoop();
+}
+
+// 调整画布尺寸
+function resizeCanvas() {
+    const canvas = gameState.canvas;
+    const container = canvas.parentElement;
+    
+    // 获取容器尺寸
+    const containerWidth = container.clientWidth;
+    const containerHeight = container.clientHeight;
+    
+    // 设置画布尺寸
+    canvas.width = containerWidth;
+    canvas.height = containerHeight;
+    
+    // 更新游戏状态中的尺寸
+    gameState.width = containerWidth;
+    gameState.height = containerHeight;
+    
+    // 如果玩家已存在，重新定位玩家
+    if (gameState.player) {
+        gameState.player.x = gameState.width / 2 - gameState.player.width / 2;
+        gameState.player.y = gameState.height - gameState.player.height - 50;
+    }
 }
 
 // ==================== 事件监听器 ====================
@@ -214,6 +244,8 @@ function createPlayer() {
         speed: 6,
         health: 200,
         maxHealth: 200,
+        lives: 8,
+        powerLevel: 1,
         color: '#4a90e2'
     };
 }
@@ -299,13 +331,13 @@ function updatePlayer() {
 // ==================== 射击系统 ====================
 function shoot() {
     const now = Date.now();
-    if (now - gameState.lastShot > 150 - (gameState.powerLevel - 1) * 15) {
+    if (now - gameState.lastShot > 150 - (gameState.player.powerLevel - 1) * 15) {
         const bulletWidth = 4;
         const bulletHeight = 18;
         const bulletSpeed = 10;
-        const bulletDamage = 20 + (gameState.powerLevel - 1) * 10;
+        const bulletDamage = 20 + (gameState.player.powerLevel - 1) * 10;
         
-        if (gameState.powerLevel === 1) {
+        if (gameState.player.powerLevel === 1) {
             gameState.bullets.push({
                 x: gameState.player.x + gameState.player.width / 2 - bulletWidth / 2,
                 y: gameState.player.y,
@@ -315,7 +347,7 @@ function shoot() {
                 color: '#00ffff',
                 damage: bulletDamage
             });
-        } else if (gameState.powerLevel === 2) {
+        } else if (gameState.player.powerLevel === 2) {
             gameState.bullets.push(
                 {
                     x: gameState.player.x + gameState.player.width / 2 - bulletWidth / 2 - 5,
@@ -336,7 +368,7 @@ function shoot() {
                     damage: bulletDamage
                 }
             );
-        } else if (gameState.powerLevel >= 3) {
+        } else if (gameState.player.powerLevel >= 3) {
             gameState.bullets.push(
                 {
                     x: gameState.player.x + gameState.player.width / 2 - bulletWidth / 2,
@@ -374,7 +406,7 @@ function shoot() {
 
 function specialShot() {
     // 修复：还原为加强型子弹而不是水平激光
-    const bulletCount = Math.min(gameState.powerLevel * 2, 8); // 发射更多子弹
+    const bulletCount = Math.min(gameState.player.powerLevel * 2, 8); // 发射更多子弹
     const spread = (bulletCount - 1) * 8;
     
     for (let i = 0; i < bulletCount; i++) {
@@ -386,7 +418,7 @@ function specialShot() {
             height: 25,
             speed: 15,
             color: '#ff00ff',
-            damage: 40 + (gameState.powerLevel - 1) * 15,
+            damage: 40 + (gameState.player.powerLevel - 1) * 15,
             isSpecial: true
         });
     }
@@ -409,119 +441,97 @@ function updateBullets() {
 // ==================== 关卡系统 ====================
 function loadLevelData() {
     gameState.levelData = {
-        1: { 
+        1: {
             name: "新手训练",
-            enemies: ['fighter'], 
-            spawnRate: 120, 
+            description: "学习基本操作",
+            waves: 2,
             enemySpeed: 0.8,
-            enemyHealth: 30,
-            enemyFireRate: 4000,
-            levelDuration: 45000, // 45秒
-            enemiesRequired: 15,
-            powerUpChance: 0.15
+            enemyHealth: 12,
+            enemyFireRate: 180,
+            powerUpChance: 0.3
         },
-        2: { 
+        2: {
             name: "基础战斗",
-            enemies: ['fighter', 'bomber'], 
-            spawnRate: 110, 
+            description: "面对更多敌人",
+            waves: 3,
+            enemySpeed: 0.9,
+            enemyHealth: 15,
+            enemyFireRate: 160,
+            powerUpChance: 0.3
+        },
+        3: {
+            name: "空中威胁",
+            description: "敌人开始编队",
+            waves: 3,
             enemySpeed: 1.0,
-            enemyHealth: 35,
-            enemyFireRate: 3800,
-            levelDuration: 50000, // 50秒
-            enemiesRequired: 18,
-            powerUpChance: 0.16
-        },
-        3: { 
-            name: "火力升级",
-            enemies: ['fighter', 'bomber', 'scout'], 
-            spawnRate: 100, 
-            enemySpeed: 1.2,
-            enemyHealth: 40,
-            enemyFireRate: 3600,
-            levelDuration: 55000, // 55秒
-            enemiesRequired: 20,
-            powerUpChance: 0.17
-        },
-        4: { 
-            name: "敌群来袭",
-            enemies: ['fighter', 'bomber', 'scout'], 
-            spawnRate: 95, 
-            enemySpeed: 1.3,
-            enemyHealth: 45,
-            enemyFireRate: 3400,
-            levelDuration: 60000, // 60秒
-            enemiesRequired: 22,
-            powerUpChance: 0.18
-        },
-        5: { 
-            name: "第一关Boss",
-            enemies: ['fighter', 'bomber', 'scout', 'interceptor'], 
-            spawnRate: 90, 
-            enemySpeed: 1.4,
-            enemyHealth: 50,
-            enemyFireRate: 3200,
-            levelDuration: 70000, // 70秒
-            enemiesRequired: 25,
-            powerUpChance: 0.20,
-            hasBoss: true,
-            bossHealth: 300
-        },
-        6: { 
-            name: "进阶挑战",
-            enemies: ['fighter', 'bomber', 'scout', 'interceptor', 'gunship'], 
-            spawnRate: 85, 
-            enemySpeed: 1.5,
-            enemyHealth: 55,
-            enemyFireRate: 3000,
-            levelDuration: 65000, // 65秒
-            enemiesRequired: 28,
-            powerUpChance: 0.21
-        },
-        7: { 
-            name: "火力全开",
-            enemies: ['fighter', 'bomber', 'scout', 'interceptor', 'gunship'], 
-            spawnRate: 80, 
-            enemySpeed: 1.6,
-            enemyHealth: 60,
-            enemyFireRate: 2800,
-            levelDuration: 70000, // 70秒
-            enemiesRequired: 30,
-            powerUpChance: 0.22
-        },
-        8: { 
-            name: "精英部队",
-            enemies: ['fighter', 'bomber', 'scout', 'interceptor', 'gunship', 'destroyer'], 
-            spawnRate: 75, 
-            enemySpeed: 1.7,
-            enemyHealth: 65,
-            enemyFireRate: 2600,
-            levelDuration: 75000, // 75秒
-            enemiesRequired: 32,
-            powerUpChance: 0.23
-        },
-        9: { 
-            name: "终极试炼",
-            enemies: ['fighter', 'bomber', 'scout', 'interceptor', 'gunship', 'destroyer', 'carrier'], 
-            spawnRate: 70, 
-            enemySpeed: 1.8,
-            enemyHealth: 70,
-            enemyFireRate: 2400,
-            levelDuration: 80000, // 80秒
-            enemiesRequired: 35,
+            enemyHealth: 18,
+            enemyFireRate: 150,
             powerUpChance: 0.25
         },
-        10: { 
-            name: "最终Boss",
-            enemies: ['fighter', 'bomber', 'scout', 'interceptor', 'gunship', 'destroyer', 'carrier', 'battleship'], 
-            spawnRate: 65, 
-            enemySpeed: 1.9,
-            enemyHealth: 75,
-            enemyFireRate: 2200,
-            levelDuration: 90000, // 90秒
-            enemiesRequired: 40,
-            powerUpChance: 0.30,
-            hasBoss: true,
-            bossHealth: 500
+        4: {
+            name: "密集攻击",
+            description: "敌人数量增加",
+            waves: 4,
+            enemySpeed: 1.1,
+            enemyHealth: 20,
+            enemyFireRate: 140,
+            powerUpChance: 0.25
+        },
+        5: {
+            name: "精英来袭",
+            description: "Boss战！",
+            waves: 4,
+            enemySpeed: 1.2,
+            enemyHealth: 25,
+            enemyFireRate: 130,
+            powerUpChance: 0.2,
+            hasBoss: true
+        },
+        6: {
+            name: "空中要塞",
+            description: "重型敌人出现",
+            waves: 5,
+            enemySpeed: 1.3,
+            enemyHealth: 30,
+            enemyFireRate: 120,
+            powerUpChance: 0.2
+        },
+        7: {
+            name: "舰队集结",
+            description: "大规模编队",
+            waves: 5,
+            enemySpeed: 1.4,
+            enemyHealth: 35,
+            enemyFireRate: 110,
+            powerUpChance: 0.15
+        },
+        8: {
+            name: "终极威胁",
+            description: "最强敌人",
+            waves: 6,
+            enemySpeed: 1.5,
+            enemyHealth: 40,
+            enemyFireRate: 100,
+            powerUpChance: 0.15
+        },
+        9: {
+            name: "最后防线",
+            description: "突破极限",
+            waves: 6,
+            enemySpeed: 1.6,
+            enemyHealth: 45,
+            enemyFireRate: 90,
+            powerUpChance: 0.1
+        },
+        10: {
+            name: "最终决战",
+            description: "终极Boss战！",
+            waves: 7,
+            enemySpeed: 1.7,
+            enemyHealth: 50,
+            enemyFireRate: 80,
+            powerUpChance: 0.1,
+            hasBoss: true
         }
     };
 }
@@ -540,8 +550,6 @@ function restartGame() {
     console.log('重新开始游戏被调用');
     gameState.score = 0;
     gameState.level = 1;
-    gameState.lives = 8;
-    gameState.powerLevel = 1;
     gameState.currentState = 'playing';
     
     // 隐藏所有界面
@@ -558,7 +566,7 @@ function restartGame() {
 
 function nextLevel() {
     gameState.level++;
-    gameState.levelEnemiesKilled = 0;
+    gameState.currentWave = 0; // 重置波次
     
     document.getElementById('levelComplete').classList.add('hidden');
     
@@ -601,49 +609,55 @@ function gameLoop() {
 }
 
 function update() {
-    if (gameState.currentState !== 'playing') {
-        // console.log('游戏状态不是playing:', gameState.currentState);
-        return;
-    }
+    if (gameState.currentState !== 'playing') return;
     
+    // 更新玩家
     updatePlayer();
-    updateEnemies();
+    
+    // 更新敌人系统（波次系统）
+    updateEnemySystem();
+    
+    // 更新小行星系统
+    spawnAsteroid();
+    updateAsteroids();
+    
+    // 更新子弹
     updateBullets();
     updateEnemyBullets();
+    
+    // 更新特效
     updateExplosions();
     updatePowerUps();
+    
+    // 碰撞检测
     checkCollisions();
-    spawnEnemies();
+    checkAsteroidBulletCollisions();
+    checkAsteroidPlayerCollisions();
+    
+    // 检查关卡完成
     checkLevelComplete();
 }
 
 function checkLevelComplete() {
-    const currentLevelData = gameState.levelData[gameState.level];
-    if (!currentLevelData) return;
+    // 检查是否完成足够的波次
+    const currentLevel = gameState.levelData[gameState.level];
+    if (!currentLevel) return;
     
-    // 检查关卡时间
-    if (!gameState.levelStartTime) {
-        gameState.levelStartTime = Date.now();
+    const requiredWaves = currentLevel.waves || 3; // 默认每关3波
+    
+    if (gameState.currentWave > requiredWaves && isWaveComplete()) {
+        levelComplete();
     }
-    
-    gameState.levelElapsedTime = Date.now() - gameState.levelStartTime;
-    
-    // 检查是否完成关卡（时间到且敌人清空，或者击杀足够敌人）
-    const timeComplete = gameState.levelElapsedTime >= currentLevelData.levelDuration;
-    const enemiesComplete = gameState.levelEnemiesKilled >= currentLevelData.enemiesRequired;
-    const noEnemiesLeft = gameState.enemies.length === 0;
-    
-    if ((timeComplete && noEnemiesLeft) || enemiesComplete) {
-        if (gameState.level < 10) {
-            gameState.currentState = 'levelComplete';
-            document.getElementById('levelComplete').classList.remove('hidden');
-        } else {
-            // 游戏通关
-            gameState.currentState = 'gameComplete';
-            document.getElementById('gameComplete').classList.remove('hidden');
-            // 处理排行榜
-            handleGameEnd(gameState.score, gameState.level);
-        }
+}
+
+function levelComplete() {
+    if (gameState.level === 10) {
+        gameState.currentState = 'gameComplete';
+        document.getElementById('finalScoreComplete').textContent = gameState.score;
+        document.getElementById('gameComplete').classList.remove('hidden');
+    } else {
+        gameState.currentState = 'levelComplete';
+        document.getElementById('levelComplete').classList.remove('hidden');
     }
 }
 
@@ -657,6 +671,7 @@ function startLevel(level) {
     gameState.enemyBullets = [];
     gameState.explosions = [];
     gameState.powerUps = [];
+    gameState.asteroids = [];
     gameState.enemySpawnTimer = 0;
     
     // 创建玩家
@@ -684,6 +699,165 @@ function showLevelInfo(level) {
     setTimeout(() => {
         levelInfo.classList.add('hidden');
     }, 3000);
+}
+
+// ==================== 小行星系统 ====================
+
+// 小行星类型配置
+const asteroidTypes = {
+    small: { 
+        size: 15, 
+        health: 20, 
+        speed: 0.8, 
+        color: '#8B7355', 
+        points: 50,
+        damage: 10
+    },
+    medium: { 
+        size: 25, 
+        health: 35, 
+        speed: 0.6, 
+        color: '#654321', 
+        points: 100,
+        damage: 15
+    },
+    large: { 
+        size: 35, 
+        health: 50, 
+        speed: 0.4, 
+        color: '#4A4A4A', 
+        points: 200,
+        damage: 20
+    }
+};
+
+// 创建小行星
+function createAsteroid() {
+    const types = Object.keys(asteroidTypes);
+    const type = types[Math.floor(Math.random() * types.length)];
+    const config = asteroidTypes[type];
+    
+    return {
+        x: Math.random() * (gameState.width - config.size * 2) + config.size,
+        y: -config.size,
+        size: config.size,
+        health: config.health,
+        maxHealth: config.health,
+        speed: config.speed,
+        color: config.color,
+        points: config.points,
+        damage: config.damage,
+        type: type,
+        rotation: Math.random() * Math.PI * 2,
+        rotationSpeed: (Math.random() - 0.5) * 0.02,
+        movementPattern: Math.random() > 0.5 ? 'straight' : 'diagonal',
+        diagonalDirection: Math.random() > 0.5 ? 1 : -1
+    };
+}
+
+// 生成小行星
+function spawnAsteroid() {
+    if (Math.random() < 0.02) { // 2% 概率每帧生成小行星
+        gameState.asteroids.push(createAsteroid());
+    }
+}
+
+// 更新小行星
+function updateAsteroids() {
+    gameState.asteroids.forEach((asteroid, index) => {
+        // 更新位置
+        if (asteroid.movementPattern === 'straight') {
+            asteroid.y += asteroid.speed;
+        } else if (asteroid.movementPattern === 'diagonal') {
+            asteroid.y += asteroid.speed;
+            asteroid.x += asteroid.speed * 0.5 * asteroid.diagonalDirection;
+        }
+        
+        // 更新旋转
+        asteroid.rotation += asteroid.rotationSpeed;
+        
+        // 检查是否超出屏幕
+        if (asteroid.y > gameState.height + asteroid.size) {
+            gameState.asteroids.splice(index, 1);
+        }
+        
+        // 检查是否碰到屏幕边界
+        if (asteroid.x < asteroid.size) {
+            asteroid.x = asteroid.size;
+            asteroid.diagonalDirection = 1;
+        } else if (asteroid.x > gameState.width - asteroid.size) {
+            asteroid.x = gameState.width - asteroid.size;
+            asteroid.diagonalDirection = -1;
+        }
+    });
+}
+
+// 检查小行星与子弹的碰撞
+function checkAsteroidBulletCollisions() {
+    gameState.bullets.forEach((bullet, bulletIndex) => {
+        gameState.asteroids.forEach((asteroid, asteroidIndex) => {
+            const dx = bullet.x + bullet.width / 2 - asteroid.x;
+            const dy = bullet.y + bullet.height / 2 - asteroid.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            
+            if (distance < asteroid.size + Math.max(bullet.width, bullet.height) / 2) {
+                // 碰撞发生
+                asteroid.health -= bullet.damage || 10;
+                
+                // 移除子弹
+                gameState.bullets.splice(bulletIndex, 1);
+                
+                // 检查小行星是否被摧毁
+                if (asteroid.health <= 0) {
+                    // 增加分数
+                    gameState.score += asteroid.points;
+                    
+                    // 创建爆炸效果
+                    gameState.explosions.push({
+                        x: asteroid.x,
+                        y: asteroid.y,
+                        life: 30,
+                        maxLife: 30
+                    });
+                    
+                    // 移除小行星
+                    gameState.asteroids.splice(asteroidIndex, 1);
+                }
+            }
+        });
+    });
+}
+
+// 检查小行星与玩家的碰撞
+function checkAsteroidPlayerCollisions() {
+    if (!gameState.player) return;
+    
+    gameState.asteroids.forEach((asteroid, index) => {
+        const dx = gameState.player.x + gameState.player.width / 2 - asteroid.x;
+        const dy = gameState.player.y + gameState.player.height / 2 - asteroid.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        
+        if (distance < asteroid.size + Math.max(gameState.player.width, gameState.player.height) / 2) {
+            // 玩家受到伤害
+            gameState.player.health -= asteroid.damage;
+            
+            // 创建爆炸效果
+            gameState.explosions.push({
+                x: asteroid.x,
+                y: asteroid.y,
+                life: 30,
+                maxLife: 30
+            });
+            
+            // 移除小行星
+            gameState.asteroids.splice(index, 1);
+            
+            // 检查玩家是否死亡
+            if (gameState.player.health <= 0) {
+                gameOver();
+            }
+        }
+    });
 }
 
 // ==================== 游戏启动 ====================
