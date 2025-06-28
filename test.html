@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>游戏测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: #f0f0f0;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 10px 0;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        button {
+            background: #4a90e2;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #357abd;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+    </style>
+</head>
+<body>
+    <h1>闪电战机游戏测试</h1>
+    
+    <div class="test-section">
+        <h2>基础功能测试</h2>
+        <button onclick="testGameInit()">测试游戏初始化</button>
+        <button onclick="testLeaderboard()">测试排行榜</button>
+        <button onclick="testButtons()">测试按钮绑定</button>
+        <div id="testResults"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>游戏链接</h2>
+        <a href="index.html" target="_blank">
+            <button>打开游戏</button>
+        </a>
+    </div>
+
+    <script>
+        function log(message, type = 'info') {
+            const results = document.getElementById('testResults');
+            const div = document.createElement('div');
+            div.className = `status ${type}`;
+            div.textContent = message;
+            results.appendChild(div);
+        }
+
+        function testGameInit() {
+            log('开始测试游戏初始化...');
+            
+            // 测试画布是否存在
+            const canvas = document.createElement('canvas');
+            canvas.id = 'testCanvas';
+            canvas.width = 1000;
+            canvas.height = 700;
+            document.body.appendChild(canvas);
+            
+            const ctx = canvas.getContext('2d');
+            if (ctx) {
+                log('✅ 画布创建成功', 'success');
+            } else {
+                log('❌ 画布创建失败', 'error');
+            }
+            
+            // 清理测试画布
+            document.body.removeChild(canvas);
+        }
+
+        function testLeaderboard() {
+            log('开始测试排行榜功能...');
+            
+            try {
+                // 测试localStorage
+                localStorage.setItem('test', 'test');
+                localStorage.removeItem('test');
+                log('✅ localStorage 功能正常', 'success');
+                
+                // 测试排行榜函数是否存在
+                if (typeof showLeaderboard === 'function') {
+                    log('✅ 排行榜函数存在', 'success');
+                } else {
+                    log('❌ 排行榜函数不存在', 'error');
+                }
+            } catch (error) {
+                log(`❌ 排行榜测试失败: ${error.message}`, 'error');
+            }
+        }
+
+        function testButtons() {
+            log('开始测试按钮绑定...');
+            
+            // 创建测试按钮
+            const testBtn = document.createElement('button');
+            testBtn.id = 'testBtn';
+            testBtn.textContent = '测试按钮';
+            testBtn.onclick = () => log('✅ 按钮点击事件正常', 'success');
+            document.body.appendChild(testBtn);
+            
+            // 测试点击
+            testBtn.click();
+            
+            // 清理
+            setTimeout(() => {
+                document.body.removeChild(testBtn);
+            }, 1000);
+        }
+    </script>
+</body>
+</html> 

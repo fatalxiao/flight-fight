@@ -5,7 +5,7 @@
 // ==================== 游戏状态管理 ====================
 let gameState = {
     // 游戏状态
-    gameState: 'start',
+    currentState: 'start',
     
     // 游戏核心数据
     score: 0,
@@ -25,11 +25,14 @@ let gameState = {
     keys: {},
     gamepad: null,
     gamepadConnected: false,
+    lastMenuInput: 0,
     
     // 时间控制变量
     lastShot: 0,
     lastSpecialShot: 0,
     enemySpawnTimer: 0,
+    levelStartTime: 0,
+    levelElapsedTime: 0,
     
     // 关卡进度
     levelEnemiesKilled: 0,
@@ -55,8 +58,13 @@ function initGame() {
     
     // 初始化游戏
     setupEventListeners();
-    createPlayer();
     loadLevelData();
+    createPlayer();
+    
+    // 设置初始游戏状态
+    gameState.currentState = 'start';
+    
+    // 开始游戏循环
     gameLoop();
 }
 
@@ -90,16 +98,34 @@ function setupEventListeners() {
     });
     
     // 开始游戏按钮点击事件
-    document.getElementById('startBtn').addEventListener('click', startGame);
+    const startBtn = document.getElementById('startBtn');
+    if (startBtn) {
+        startBtn.addEventListener('click', startGame);
+    }
+    
+    // 排行榜按钮点击事件
+    const leaderboardBtn = document.getElementById('leaderboardBtn');
+    if (leaderboardBtn) {
+        leaderboardBtn.addEventListener('click', showLeaderboard);
+    }
     
     // 重新开始按钮点击事件
-    document.getElementById('restartBtn').addEventListener('click', restartGame);
+    const restartBtn = document.getElementById('restartBtn');
+    if (restartBtn) {
+        restartBtn.addEventListener('click', restartGame);
+    }
     
     // 下一关按钮点击事件
-    document.getElementById('nextLevelBtn').addEventListener('click', nextLevel);
+    const nextLevelBtn = document.getElementById('nextLevelBtn');
+    if (nextLevelBtn) {
+        nextLevelBtn.addEventListener('click', nextLevel);
+    }
     
     // 游戏通关重新开始按钮点击事件
-    document.getElementById('gameCompleteRestartBtn').addEventListener('click', restartGame);
+    const gameCompleteRestartBtn = document.getElementById('gameCompleteRestartBtn');
+    if (gameCompleteRestartBtn) {
+        gameCompleteRestartBtn.addEventListener('click', restartGame);
+    }
 }
 
 // ==================== 手柄菜单控制 ====================
@@ -140,7 +166,7 @@ function handleMenuConfirm() {
     gameState.lastMenuInput = Date.now();
     
     // 根据当前游戏状态执行相应操作
-    switch (gameState.gameState) {
+    switch (gameState.currentState) {
         case 'start':
             startGame();
             break;
@@ -162,7 +188,7 @@ function handleMenuCancel() {
     gameState.lastMenuInput = Date.now();
     
     // 返回开始界面
-    if (gameState.gameState !== 'start') {
+    if (gameState.currentState !== 'start') {
         restartGame();
     }
 }
@@ -172,16 +198,16 @@ function handleMenuSpecial() {
     if (gameState.lastMenuInput && Date.now() - gameState.lastMenuInput < 300) return;
     gameState.lastMenuInput = Date.now();
     
-    // 特殊功能：直接开始游戏
-    if (gameState.gameState === 'start') {
-        startGame();
+    // 特殊功能：显示排行榜
+    if (gameState.currentState === 'start') {
+        showLeaderboard();
     }
 }
 
 // ==================== 玩家相关函数 ====================
 function createPlayer() {
     gameState.player = {
-        x: gameState.width / 2,
+        x: gameState.width / 2 - 20, // 居中显示
         y: gameState.height - 80,
         width: 40,
         height: 40,
@@ -193,7 +219,7 @@ function createPlayer() {
 }
 
 function updatePlayer() {
-    if (gameState.gameState !== 'playing') return;
+    if (gameState.currentState !== 'playing') return;
     
     const currentLevelData = gameState.levelData[gameState.level];
     if (!currentLevelData) return;
@@ -383,41 +409,151 @@ function updateBullets() {
 // ==================== 关卡系统 ====================
 function loadLevelData() {
     gameState.levelData = {
-        1: { enemies: ['fighter', 'bomber'], spawnRate: 100, enemySpeed: 1.0 },
-        2: { enemies: ['fighter', 'bomber', 'scout'], spawnRate: 95, enemySpeed: 1.1 },
-        3: { enemies: ['fighter', 'bomber', 'scout', 'interceptor'], spawnRate: 90, enemySpeed: 1.2 },
-        4: { enemies: ['fighter', 'bomber', 'scout', 'interceptor', 'gunship'], spawnRate: 85, enemySpeed: 1.3 },
-        5: { enemies: ['fighter', 'bomber', 'scout', 'interceptor', 'gunship', 'destroyer'], spawnRate: 80, enemySpeed: 1.4 },
-        6: { enemies: ['fighter', 'bomber', 'scout', 'interceptor', 'gunship', 'destroyer', 'carrier'], spawnRate: 75, enemySpeed: 1.5 },
-        7: { enemies: ['fighter', 'bomber', 'scout', 'interceptor', 'gunship', 'destroyer', 'carrier', 'battleship'], spawnRate: 70, enemySpeed: 1.6 },
-        8: { enemies: ['fighter', 'bomber', 'scout', 'interceptor', 'gunship', 'destroyer', 'carrier', 'battleship', 'dreadnought'], spawnRate: 65, enemySpeed: 1.7 },
-        9: { enemies: ['fighter', 'bomber', 'scout', 'interceptor', 'gunship', 'destroyer', 'carrier', 'battleship', 'dreadnought', 'titan'], spawnRate: 60, enemySpeed: 1.8 },
-        10: { enemies: ['fighter', 'bomber', 'scout', 'interceptor', 'gunship', 'destroyer', 'carrier', 'battleship', 'dreadnought', 'titan'], spawnRate: 55, enemySpeed: 1.9 },
-        11: { enemies: ['fighter'], spawnRate: 1000, enemySpeed: 1.0 }
+        1: { 
+            name: "新手训练",
+            enemies: ['fighter'], 
+            spawnRate: 120, 
+            enemySpeed: 0.8,
+            enemyHealth: 30,
+            enemyFireRate: 4000,
+            levelDuration: 45000, // 45秒
+            enemiesRequired: 15,
+            powerUpChance: 0.15
+        },
+        2: { 
+            name: "基础战斗",
+            enemies: ['fighter', 'bomber'], 
+            spawnRate: 110, 
+            enemySpeed: 1.0,
+            enemyHealth: 35,
+            enemyFireRate: 3800,
+            levelDuration: 50000, // 50秒
+            enemiesRequired: 18,
+            powerUpChance: 0.16
+        },
+        3: { 
+            name: "火力升级",
+            enemies: ['fighter', 'bomber', 'scout'], 
+            spawnRate: 100, 
+            enemySpeed: 1.2,
+            enemyHealth: 40,
+            enemyFireRate: 3600,
+            levelDuration: 55000, // 55秒
+            enemiesRequired: 20,
+            powerUpChance: 0.17
+        },
+        4: { 
+            name: "敌群来袭",
+            enemies: ['fighter', 'bomber', 'scout'], 
+            spawnRate: 95, 
+            enemySpeed: 1.3,
+            enemyHealth: 45,
+            enemyFireRate: 3400,
+            levelDuration: 60000, // 60秒
+            enemiesRequired: 22,
+            powerUpChance: 0.18
+        },
+        5: { 
+            name: "第一关Boss",
+            enemies: ['fighter', 'bomber', 'scout', 'interceptor'], 
+            spawnRate: 90, 
+            enemySpeed: 1.4,
+            enemyHealth: 50,
+            enemyFireRate: 3200,
+            levelDuration: 70000, // 70秒
+            enemiesRequired: 25,
+            powerUpChance: 0.20,
+            hasBoss: true,
+            bossHealth: 300
+        },
+        6: { 
+            name: "进阶挑战",
+            enemies: ['fighter', 'bomber', 'scout', 'interceptor', 'gunship'], 
+            spawnRate: 85, 
+            enemySpeed: 1.5,
+            enemyHealth: 55,
+            enemyFireRate: 3000,
+            levelDuration: 65000, // 65秒
+            enemiesRequired: 28,
+            powerUpChance: 0.21
+        },
+        7: { 
+            name: "火力全开",
+            enemies: ['fighter', 'bomber', 'scout', 'interceptor', 'gunship'], 
+            spawnRate: 80, 
+            enemySpeed: 1.6,
+            enemyHealth: 60,
+            enemyFireRate: 2800,
+            levelDuration: 70000, // 70秒
+            enemiesRequired: 30,
+            powerUpChance: 0.22
+        },
+        8: { 
+            name: "精英部队",
+            enemies: ['fighter', 'bomber', 'scout', 'interceptor', 'gunship', 'destroyer'], 
+            spawnRate: 75, 
+            enemySpeed: 1.7,
+            enemyHealth: 65,
+            enemyFireRate: 2600,
+            levelDuration: 75000, // 75秒
+            enemiesRequired: 32,
+            powerUpChance: 0.23
+        },
+        9: { 
+            name: "终极试炼",
+            enemies: ['fighter', 'bomber', 'scout', 'interceptor', 'gunship', 'destroyer', 'carrier'], 
+            spawnRate: 70, 
+            enemySpeed: 1.8,
+            enemyHealth: 70,
+            enemyFireRate: 2400,
+            levelDuration: 80000, // 80秒
+            enemiesRequired: 35,
+            powerUpChance: 0.25
+        },
+        10: { 
+            name: "最终Boss",
+            enemies: ['fighter', 'bomber', 'scout', 'interceptor', 'gunship', 'destroyer', 'carrier', 'battleship'], 
+            spawnRate: 65, 
+            enemySpeed: 1.9,
+            enemyHealth: 75,
+            enemyFireRate: 2200,
+            levelDuration: 90000, // 90秒
+            enemiesRequired: 40,
+            powerUpChance: 0.30,
+            hasBoss: true,
+            bossHealth: 500
+        }
     };
 }
 
 // ==================== 游戏控制函数 ====================
 function startGame() {
-    gameState.gameState = 'playing';
+    console.log('开始游戏被调用');
+    gameState.currentState = 'playing';
     document.getElementById('startScreen').classList.add('hidden');
-    resetLevel();
+    console.log('开始界面已隐藏');
+    startLevel(1);
+    console.log('关卡1已开始');
 }
 
 function restartGame() {
+    console.log('重新开始游戏被调用');
     gameState.score = 0;
     gameState.level = 1;
     gameState.lives = 8;
     gameState.powerLevel = 1;
-    gameState.gameState = 'playing';
+    gameState.currentState = 'playing';
     
     // 隐藏所有界面
     document.getElementById('startScreen').classList.add('hidden');
     document.getElementById('gameOver').classList.add('hidden');
     document.getElementById('levelComplete').classList.add('hidden');
     document.getElementById('gameComplete').classList.add('hidden');
+    document.getElementById('leaderboard').classList.add('hidden');
+    document.getElementById('newRecord').classList.add('hidden');
+    document.getElementById('finalScoreDialog').classList.add('hidden');
     
-    resetLevel();
+    startLevel(1);
 }
 
 function nextLevel() {
@@ -427,11 +563,13 @@ function nextLevel() {
     document.getElementById('levelComplete').classList.add('hidden');
     
     if (gameState.level <= 10) {
-        gameState.gameState = 'playing';
-        resetLevel();
+        gameState.currentState = 'playing';
+        startLevel(gameState.level);
     } else {
-        gameState.gameState = 'gameComplete';
+        gameState.currentState = 'gameComplete';
         document.getElementById('gameComplete').classList.remove('hidden');
+        // 处理排行榜
+        handleGameEnd(gameState.score, gameState.level - 1);
     }
 }
 
@@ -445,17 +583,28 @@ function resetLevel() {
     createPlayer();
 }
 
+// 游戏结束处理
+function gameOver() {
+    gameState.currentState = 'gameOver';
+    document.getElementById('gameOver').classList.remove('hidden');
+    // 处理排行榜
+    handleGameEnd(gameState.score, gameState.level - 1);
+}
+
 // ==================== 游戏主循环 ====================
 function gameLoop() {
     update();
     render();
-    updateUI();
+    updateUI(); // 添加UI更新
     handleGamepadMenuInput(); // 添加手柄菜单输入处理
     requestAnimationFrame(gameLoop);
 }
 
 function update() {
-    if (gameState.gameState !== 'playing') return;
+    if (gameState.currentState !== 'playing') {
+        // console.log('游戏状态不是playing:', gameState.currentState);
+        return;
+    }
     
     updatePlayer();
     updateEnemies();
@@ -466,6 +615,75 @@ function update() {
     checkCollisions();
     spawnEnemies();
     checkLevelComplete();
+}
+
+function checkLevelComplete() {
+    const currentLevelData = gameState.levelData[gameState.level];
+    if (!currentLevelData) return;
+    
+    // 检查关卡时间
+    if (!gameState.levelStartTime) {
+        gameState.levelStartTime = Date.now();
+    }
+    
+    gameState.levelElapsedTime = Date.now() - gameState.levelStartTime;
+    
+    // 检查是否完成关卡（时间到且敌人清空，或者击杀足够敌人）
+    const timeComplete = gameState.levelElapsedTime >= currentLevelData.levelDuration;
+    const enemiesComplete = gameState.levelEnemiesKilled >= currentLevelData.enemiesRequired;
+    const noEnemiesLeft = gameState.enemies.length === 0;
+    
+    if ((timeComplete && noEnemiesLeft) || enemiesComplete) {
+        if (gameState.level < 10) {
+            gameState.currentState = 'levelComplete';
+            document.getElementById('levelComplete').classList.remove('hidden');
+        } else {
+            // 游戏通关
+            gameState.currentState = 'gameComplete';
+            document.getElementById('gameComplete').classList.remove('hidden');
+            // 处理排行榜
+            handleGameEnd(gameState.score, gameState.level);
+        }
+    }
+}
+
+// 开始关卡
+function startLevel(level) {
+    gameState.level = level;
+    gameState.levelStartTime = 0;
+    gameState.levelElapsedTime = 0;
+    gameState.enemies = [];
+    gameState.bullets = [];
+    gameState.enemyBullets = [];
+    gameState.explosions = [];
+    gameState.powerUps = [];
+    gameState.enemySpawnTimer = 0;
+    
+    // 创建玩家
+    createPlayer();
+    
+    // 显示关卡信息
+    showLevelInfo(level);
+}
+
+// 显示关卡信息
+function showLevelInfo(level) {
+    const config = gameState.levelData[level];
+    if (!config) return;
+    
+    const levelInfo = document.getElementById('levelInfo');
+    const levelName = document.getElementById('levelName');
+    const levelNumber = document.getElementById('levelNumber');
+    
+    levelName.textContent = config.name;
+    levelNumber.textContent = level;
+    
+    levelInfo.classList.remove('hidden');
+    
+    // 3秒后隐藏
+    setTimeout(() => {
+        levelInfo.classList.add('hidden');
+    }, 3000);
 }
 
 // ==================== 游戏启动 ====================

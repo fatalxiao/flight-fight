@@ -6,71 +6,120 @@
     <!-- 设置视口，确保在移动设备上正确显示 -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <!-- 页面标题 -->
-    <title>闪电战机 - 竖版射击游戏</title>
+    <title>闪电战机 - 垂直射击游戏</title>
     <!-- 引入外部CSS样式文件 -->
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <!-- 游戏主容器，包含所有游戏界面元素 -->
-    <div id="gameContainer">
-        <!-- 游戏信息面板：显示得分、关卡、生命值和火力等级 -->
-        <div id="gameInfo">
-            <!-- 得分显示区域 -->
-            <div id="score">得分: <span id="scoreValue">0</span></div>
-            <!-- 当前关卡显示 -->
-            <div id="level">关卡: <span id="levelValue">1</span></div>
-            <!-- 剩余生命值显示 -->
-            <div id="lives">生命: <span id="livesValue">3</span></div>
-            <!-- 火力等级显示 -->
-            <div id="power">火力等级: <span id="powerValue">1</span></div>
+    <div class="game-container">
+        <canvas id="gameCanvas" width="1000" height="700"></canvas>
+        
+        <!-- 开始界面 -->
+        <div id="startScreen" class="screen">
+            <h1>闪电战机</h1>
+            <p>垂直射击游戏</p>
+            
+            <!-- 按钮容器 -->
+            <div class="button-container">
+                <button id="startBtn">开始游戏</button>
+                <button id="leaderboardBtn">排行榜</button>
+            </div>
+            
+            <!-- 控制说明 -->
+            <div class="controls">
+                <h3>控制说明</h3>
+                <p><strong>键盘控制：</strong></p>
+                <p>WASD 或 方向键：移动</p>
+                <p>空格键：射击</p>
+                <p>R键：特殊攻击</p>
+                <p>ESC：暂停</p>
+                <br>
+                <p><strong>PS5手柄控制：</strong></p>
+                <p>左摇杆：移动</p>
+                <p>右扳机(R2)：特殊攻击</p>
+                <p>A键：确认/开始</p>
+                <p>B键：返回/取消</p>
+                <p>X/Y键：显示排行榜</p>
+                <br>
+                <p><strong>道具说明：</strong></p>
+                <p>⭐ 黄色星星：火力升级</p>
+                <p>💖 粉色心形：恢复生命</p>
+            </div>
         </div>
         
-        <!-- 游戏画布：用于绘制游戏图形，设置固定尺寸400x600像素 -->
-        <canvas id="gameCanvas" width="400" height="600"></canvas>
-        
-        <!-- 游戏结束界面：当玩家生命值耗尽时显示 -->
-        <div id="gameOver" class="hidden">
+        <!-- 游戏结束界面 -->
+        <div id="gameOver" class="screen hidden">
             <h2>游戏结束</h2>
-            <!-- 显示最终得分 -->
-            <p>最终得分: <span id="finalScore">0</span></p>
-            <!-- 重新开始游戏按钮 -->
+            <p>最终分数: <span id="finalScore">0</span></p>
             <button id="restartBtn">重新开始</button>
+            <button onclick="showLeaderboard()">查看排行榜</button>
         </div>
         
-        <!-- 关卡完成界面：当玩家完成当前关卡时显示 -->
-        <div id="levelComplete" class="hidden">
-            <h2>关卡完成!</h2>
-            <p>恭喜升级!</p>
-            <!-- 进入下一关按钮 -->
+        <!-- 关卡完成界面 -->
+        <div id="levelComplete" class="screen hidden">
+            <h2>关卡完成！</h2>
+            <p>当前分数: <span id="levelScore">0</span></p>
             <button id="nextLevelBtn">下一关</button>
         </div>
         
-        <!-- 游戏通关界面：当玩家完成第10关时显示 -->
-        <div id="gameComplete" class="hidden">
-            <h2>🎉 游戏通关! 🎉</h2>
-            <p>恭喜你完成了所有关卡!</p>
-            <p>最终得分: <span id="finalScoreComplete">0</span></p>
-            <!-- 重新开始游戏按钮 -->
+        <!-- 游戏通关界面 -->
+        <div id="gameComplete" class="screen hidden">
+            <h2>🎉 恭喜通关！ 🎉</h2>
+            <p>最终分数: <span id="finalScoreComplete">0</span></p>
+            <p>你成功完成了所有关卡！</p>
             <button id="gameCompleteRestartBtn">重新开始</button>
+            <button onclick="showLeaderboard()">查看排行榜</button>
         </div>
         
-        <!-- 游戏开始界面：初始显示的游戏菜单 -->
-        <div id="startScreen">
-            <!-- 游戏标题 -->
-            <h1>闪电战机</h1>
-            <!-- 游戏操作说明 -->
-            <p>使用方向键或WASD移动，空格键发射大招</p>
-            <p>支持PS5手柄：左摇杆移动，右扳机发射大招</p>
-            <p><strong>手柄菜单操作：</strong></p>
-            <p>A键 - 确认/开始游戏 | B键 - 返回 | X/Y键 - 快速开始</p>
-            <p><strong>道具说明：</strong></p>
-            <p>⭐ 黄色星星 - 火力升级 | ❤️ 粉色心形 - HP回复</p>
-            <!-- 开始游戏按钮 -->
-            <button id="startBtn">开始游戏</button>
+        <!-- 排行榜界面 -->
+        <div id="leaderboard" class="screen hidden">
+            <h2>🏆 排行榜 🏆</h2>
+            <div id="leaderboardList" class="leaderboard-list">
+                <!-- 排行榜内容将在这里动态生成 -->
+            </div>
+            <button onclick="hideLeaderboard()">返回</button>
+        </div>
+        
+        <!-- 新纪录对话框 -->
+        <div id="newRecord" class="dialog hidden">
+            <div class="dialog-content">
+                <h2>🎉 新纪录！ 🎉</h2>
+                <p>恭喜你创造了新的高分记录！</p>
+                <p>分数: <span id="newRecordScore">0</span></p>
+                <p>排名: 第<span id="newRecordRank">1</span>名</p>
+                <button onclick="hideNewRecordDialog()">确定</button>
+            </div>
+        </div>
+        
+        <!-- 最终分数对话框 -->
+        <div id="finalScoreDialog" class="dialog hidden">
+            <div class="dialog-content">
+                <h2>游戏结束</h2>
+                <p>最终分数: <span id="finalScoreValue">0</span></p>
+                <p>排名: 第<span id="finalScoreRank">1</span>名</p>
+                <button onclick="hideFinalScoreDialog()">确定</button>
+                <button onclick="showLeaderboard()">查看排行榜</button>
+            </div>
+        </div>
+        
+        <!-- 关卡信息显示 -->
+        <div id="levelInfo" class="level-info hidden">
+            <h3>第<span id="levelNumber">1</span>关</h3>
+            <p id="levelName">新手训练</p>
+        </div>
+        
+        <!-- 游戏UI -->
+        <div id="gameUI" class="game-ui">
+            <div class="score">分数: <span id="score">0</span></div>
+            <div class="level">关卡: <span id="level">1</span></div>
+            <div class="lives">生命: <span id="lives">8</span></div>
+            <div class="health">血量: <span id="health">200</span></div>
+            <div class="power">火力: <span id="power">1</span></div>
         </div>
     </div>
     
-    <!-- 引入游戏模块文件 -->
+    <!-- 脚本引用 -->
+    <script src="leaderboard.js"></script>
     <script src="enemy.js"></script>
     <script src="collision.js"></script>
     <script src="render.js"></script>

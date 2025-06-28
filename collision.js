@@ -23,8 +23,11 @@ function checkCollisions() {
                     createExplosion(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2);
                     gameState.enemies.splice(j, 1);
                     
-                    // 增加道具掉落概率从10%到25%
-                    if (Math.random() < 0.25) {
+                    // 使用关卡配置中的道具掉落概率
+                    const currentLevel = gameState.levelData[gameState.level];
+                    const powerUpChance = currentLevel ? currentLevel.powerUpChance : 0.25;
+                    
+                    if (Math.random() < powerUpChance) {
                         // 随机选择道具类型：70%概率掉落火力升级，30%概率掉落HP回复
                         const isHealthPickup = Math.random() < 0.3;
                         gameState.powerUps.push({

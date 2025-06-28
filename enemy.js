@@ -35,19 +35,22 @@ function createEnemy(type) {
         };
     }
     
-    const speedMultiplier = currentLevel.enemySpeed;
+    // 使用关卡配置中的敌人属性
+    const health = currentLevel.enemyHealth || config.health;
+    const speed = config.speed * currentLevel.enemySpeed;
+    const fireRate = currentLevel.enemyFireRate || config.fireRate;
     
     return {
         x: Math.random() * (gameState.width - config.width),
         y: -config.height,
         width: config.width,
         height: config.height,
-        health: config.health + (gameState.level - 1) * 3, // 减少每关血量增长从5到3
-        maxHealth: config.health + (gameState.level - 1) * 3,
-        speed: config.speed * speedMultiplier,
+        health: health,
+        maxHealth: health,
+        speed: speed,
         color: config.color,
         points: config.points,
-        fireRate: config.fireRate,
+        fireRate: fireRate,
         lastShot: 0,
         type: type
     };

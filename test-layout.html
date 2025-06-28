@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>布局测试</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background: #1e3c72;
+        }
+        .test-container {
+            width: 1000px;
+            height: 700px;
+            margin: 0 auto;
+            position: relative;
+            border: 2px solid #4a90e2;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1 style="text-align: center; color: white; margin-bottom: 20px;">布局测试</h1>
+    
+    <div class="test-container">
+        <!-- 开始界面 -->
+        <div id="startScreen" class="screen">
+            <h1>闪电战机</h1>
+            <p>垂直射击游戏</p>
+            
+            <!-- 按钮容器 -->
+            <div class="button-container">
+                <button id="startBtn">开始游戏</button>
+                <button id="leaderboardBtn">排行榜</button>
+            </div>
+            
+            <!-- 控制说明 -->
+            <div class="controls">
+                <h3>控制说明</h3>
+                <p><strong>键盘控制：</strong></p>
+                <p>WASD 或 方向键：移动</p>
+                <p>空格键：射击</p>
+                <p>R键：特殊攻击</p>
+                <p>ESC：暂停</p>
+                <br>
+                <p><strong>PS5手柄控制：</strong></p>
+                <p>左摇杆：移动</p>
+                <p>右扳机(R2)：特殊攻击</p>
+                <p>A键：确认/开始</p>
+                <p>B键：返回/取消</p>
+                <p>X/Y键：显示排行榜</p>
+                <br>
+                <p><strong>道具说明：</strong></p>
+                <p>⭐ 黄色星星：火力升级</p>
+                <p>💖 粉色心形：恢复生命</p>
+            </div>
+        </div>
+    </div>
+    
+    <div style="text-align: center; margin-top: 20px;">
+        <a href="index.html" style="color: white; text-decoration: none; padding: 10px 20px; background: #4a90e2; border-radius: 5px;">
+            返回游戏
+        </a>
+    </div>
+</body>
+</html> 
