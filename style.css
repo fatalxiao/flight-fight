@@ -1,0 +1,145 @@
+/* 全局样式重置：移除所有元素的默认边距和内边距，使用border-box盒模型 */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* 页面主体样式：设置背景渐变、字体和布局 */
+body {
+    font-family: 'Arial', sans-serif; /* 使用Arial字体，无衬线字体 */
+    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); /* 深蓝色渐变背景 */
+    display: flex; /* 使用弹性布局 */
+    justify-content: center; /* 水平居中 */
+    align-items: center; /* 垂直居中 */
+    min-height: 100vh; /* 最小高度为视口高度 */
+    color: white; /* 文字颜色为白色 */
+}
+
+/* 游戏主容器样式：相对定位，用于包含所有游戏元素 */
+#gameContainer {
+    position: relative;
+    text-align: center;
+}
+
+/* 游戏信息面板样式：显示得分、关卡、生命值等信息 */
+#gameInfo {
+    display: flex; /* 使用弹性布局 */
+    justify-content: space-between; /* 元素之间平均分布 */
+    margin-bottom: 10px; /* 底部边距 */
+    font-size: 16px; /* 字体大小 */
+    font-weight: bold; /* 字体加粗 */
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.5); /* 文字阴影效果 */
+}
+
+/* 游戏画布样式：设置边框、圆角和背景 */
+#gameCanvas {
+    border: 3px solid #4a90e2; /* 蓝色边框 */
+    border-radius: 10px; /* 圆角边框 */
+    background: linear-gradient(to bottom, #0c1445 0%, #1a237e 50%, #0c1445 100%); /* 深蓝色渐变背景 */
+    box-shadow: 0 0 20px rgba(74, 144, 226, 0.5); /* 发光阴影效果 */
+}
+
+/* 隐藏类：用于控制界面元素的显示和隐藏 */
+.hidden {
+    display: none !important; /* 强制隐藏元素 */
+}
+
+/* 游戏结束、关卡完成和开始界面的通用样式 */
+#gameOver, #levelComplete, #startScreen {
+    position: absolute; /* 绝对定位 */
+    top: 50%; /* 垂直居中 */
+    left: 50%; /* 水平居中 */
+    transform: translate(-50%, -50%); /* 精确居中定位 */
+    background: rgba(0, 0, 0, 0.9); /* 半透明黑色背景 */
+    padding: 30px; /* 内边距 */
+    border-radius: 15px; /* 圆角 */
+    border: 2px solid #4a90e2; /* 蓝色边框 */
+    box-shadow: 0 0 30px rgba(74, 144, 226, 0.8); /* 发光阴影 */
+    text-align: center; /* 文字居中 */
+    min-width: 300px; /* 最小宽度 */
+}
+
+/* 开始界面标题样式 */
+#startScreen h1 {
+    font-size: 2.5em; /* 大字体 */
+    margin-bottom: 20px; /* 底部边距 */
+    color: #4a90e2; /* 蓝色文字 */
+    text-shadow: 0 0 10px rgba(74, 144, 226, 0.8); /* 发光文字效果 */
+}
+
+/* 开始界面说明文字样式 */
+#startScreen p {
+    margin-bottom: 30px; /* 底部边距 */
+    font-size: 1.1em; /* 字体大小 */
+    color: #b0bec5; /* 浅灰色文字 */
+}
+
+/* 按钮通用样式 */
+button {
+    background: linear-gradient(45deg, #4a90e2, #357abd); /* 蓝色渐变背景 */
+    color: white; /* 白色文字 */
+    border: none; /* 无边框 */
+    padding: 12px 24px; /* 内边距 */
+    font-size: 16px; /* 字体大小 */
+    border-radius: 25px; /* 圆角按钮 */
+    cursor: pointer; /* 鼠标指针样式 */
+    transition: all 0.3s ease; /* 平滑过渡动画 */
+    box-shadow: 0 4px 15px rgba(74, 144, 226, 0.3); /* 阴影效果 */
+}
+
+/* 按钮悬停效果 */
+button:hover {
+    background: linear-gradient(45deg, #357abd, #4a90e2); /* 渐变方向反转 */
+    transform: translateY(-2px); /* 向上移动2像素 */
+    box-shadow: 0 6px 20px rgba(74, 144, 226, 0.5); /* 增强阴影效果 */
+}
+
+/* 按钮点击效果 */
+button:active {
+    transform: translateY(0); /* 恢复原位 */
+}
+
+/* 游戏结束和关卡完成界面的标题样式 */
+#gameOver h2, #levelComplete h2 {
+    color: #ff6b6b; /* 红色文字（游戏结束） */
+    margin-bottom: 15px; /* 底部边距 */
+    font-size: 1.8em; /* 字体大小 */
+}
+
+/* 关卡完成标题特殊颜色 */
+#levelComplete h2 {
+    color: #4ecdc4; /* 青色文字 */
+}
+
+/* 游戏结束和关卡完成界面的段落样式 */
+#gameOver p, #levelComplete p {
+    margin-bottom: 20px; /* 底部边距 */
+    font-size: 1.2em; /* 字体大小 */
+}
+
+/* 最终得分显示样式 */
+#finalScore {
+    color: #ffd93d; /* 黄色文字 */
+    font-weight: bold; /* 字体加粗 */
+    font-size: 1.3em; /* 字体大小 */
+}
+
+/* 响应式设计：适配小屏幕设备 */
+@media (max-width: 500px) {
+    /* 小屏幕下调整画布尺寸 */
+    #gameCanvas {
+        width: 350px;
+        height: 525px;
+    }
+    
+    /* 小屏幕下调整信息面板字体大小 */
+    #gameInfo {
+        font-size: 14px;
+    }
+    
+    /* 小屏幕下调整开始界面标题大小 */
+    #startScreen h1 {
+        font-size: 2em;
+    }
+} 

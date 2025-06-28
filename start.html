@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <!-- 设置文档字符编码为UTF-8，支持中文显示 -->
+    <meta charset="UTF-8">
+    <!-- 设置视口，确保在移动设备上正确显示 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- 页面标题 -->
+    <title>闪电战机 - 启动页面</title>
+    <!-- 内联CSS样式，定义启动页面的外观 -->
+    <style>
+        /* 页面主体样式：设置背景渐变和布局 */
+        body {
+            font-family: 'Arial', sans-serif;  /* 使用Arial字体 */
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);  /* 深蓝色渐变背景 */
+            margin: 0;
+            padding: 0;
+            display: flex;  /* 使用弹性布局 */
+            justify-content: center;  /* 水平居中 */
+            align-items: center;  /* 垂直居中 */
+            min-height: 100vh;  /* 最小高度为视口高度 */
+            color: white;  /* 文字颜色为白色 */
+        }
+        
+        /* 主容器样式：包含所有内容的容器 */
+        .container {
+            text-align: center;  /* 文字居中 */
+            background: rgba(0, 0, 0, 0.8);  /* 半透明黑色背景 */
+            padding: 40px;  /* 内边距 */
+            border-radius: 20px;  /* 圆角边框 */
+            border: 2px solid #4a90e2;  /* 蓝色边框 */
+            box-shadow: 0 0 30px rgba(74, 144, 226, 0.8);  /* 发光阴影效果 */
+            max-width: 500px;  /* 最大宽度 */
+        }
+        
+        /* 标题样式 */
+        h1 {
+            font-size: 2.5em;  /* 大字体 */
+            margin-bottom: 20px;  /* 底部边距 */
+            color: #4a90e2;  /* 蓝色文字 */
+            text-shadow: 0 0 10px rgba(74, 144, 226, 0.8);  /* 发光文字效果 */
+        }
+        
+        /* 描述文字样式 */
+        .description {
+            margin-bottom: 30px;  /* 底部边距 */
+            line-height: 1.6;  /* 行高 */
+            color: #b0bec5;  /* 浅灰色文字 */
+        }
+        
+        /* 特色功能区域样式 */
+        .features {
+            text-align: left;  /* 左对齐 */
+            margin-bottom: 30px;  /* 底部边距 */
+            background: rgba(74, 144, 226, 0.1);  /* 半透明蓝色背景 */
+            padding: 20px;  /* 内边距 */
+            border-radius: 10px;  /* 圆角 */
+        }
+        
+        /* 特色功能标题样式 */
+        .features h3 {
+            color: #4a90e2;  /* 蓝色文字 */
+            margin-bottom: 10px;  /* 底部边距 */
+        }
+        
+        /* 特色功能列表样式 */
+        .features ul {
+            list-style: none;  /* 移除默认列表样式 */
+            padding: 0;
+        }
+        
+        /* 特色功能列表项样式 */
+        .features li {
+            margin: 5px 0;  /* 上下边距 */
+            padding-left: 20px;  /* 左内边距 */
+            position: relative;  /* 相对定位 */
+        }
+        
+        /* 特色功能列表项前的图标 */
+        .features li:before {
+            content: "🚀";  /* 火箭图标 */
+            position: absolute;  /* 绝对定位 */
+            left: 0;
+        }
+        
+        /* 开始游戏按钮样式 */
+        .start-btn {
+            background: linear-gradient(45deg, #4a90e2, #357abd);  /* 蓝色渐变背景 */
+            color: white;  /* 白色文字 */
+            border: none;  /* 无边框 */
+            padding: 15px 30px;  /* 内边距 */
+            font-size: 18px;  /* 字体大小 */
+            border-radius: 25px;  /* 圆角按钮 */
+            cursor: pointer;  /* 鼠标指针样式 */
+            transition: all 0.3s ease;  /* 平滑过渡动画 */
+            box-shadow: 0 4px 15px rgba(74, 144, 226, 0.3);  /* 阴影效果 */
+            text-decoration: none;  /* 移除下划线 */
+            display: inline-block;  /* 行内块级元素 */
+        }
+        
+        /* 开始游戏按钮悬停效果 */
+        .start-btn:hover {
+            background: linear-gradient(45deg, #357abd, #4a90e2);  /* 渐变方向反转 */
+            transform: translateY(-2px);  /* 向上移动2像素 */
+            box-shadow: 0 6px 20px rgba(74, 144, 226, 0.5);  /* 增强阴影效果 */
+        }
+        
+        /* 控制说明区域样式 */
+        .controls {
+            margin-top: 20px;  /* 顶部边距 */
+            font-size: 14px;  /* 字体大小 */
+            color: #b0bec5;  /* 浅灰色文字 */
+        }
+    </style>
+</head>
+<body>
+    <!-- 主容器 -->
+    <div class="container">
+        <!-- 游戏标题 -->
+        <h1>⚡ 闪电战机</h1>
+        
+        <!-- 游戏描述 -->
+        <div class="description">
+            欢迎来到太空战场！这是一个经典的竖版射击游戏，你将驾驶战机在宇宙中与敌人展开激烈战斗。
+        </div>
+        
+        <!-- 游戏特色功能列表 -->
+        <div class="features">
+            <h3>🎮 游戏特色</h3>
+            <ul>
+                <li>10个精彩关卡，难度递增</li>
+                <li>10种不同类型的敌方单位</li>
+                <li>升级系统，提升火力等级</li>
+                <li>现代化UI设计，视觉效果震撼</li>
+                <li>流畅的60FPS游戏体验</li>
+            </ul>
+        </div>
+        
+        <!-- 开始游戏按钮 -->
+        <a href="index.html" class="start-btn">🚀 开始游戏</a>
+        
+        <!-- 游戏控制说明 -->
+        <div class="controls">
+            <p><strong>控制方式：</strong></p>
+            <p>方向键 - 移动 | 空格键 - 射击</p>
+        </div>
+    </div>
+</body>
+</html> 
