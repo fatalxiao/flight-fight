@@ -25,12 +25,14 @@ function checkCollisions() {
                     
                     // 增加道具掉落概率从10%到25%
                     if (Math.random() < 0.25) {
+                        // 随机选择道具类型：70%概率掉落火力升级，30%概率掉落HP回复
+                        const isHealthPickup = Math.random() < 0.3;
                         gameState.powerUps.push({
                             x: enemy.x + enemy.width / 2 - 10,
                             y: enemy.y + enemy.height / 2,
                             width: 20,
                             height: 20,
-                            type: 'power'
+                            type: isHealthPickup ? 'health' : 'power' // 添加道具类型
                         });
                     }
                 }
@@ -75,7 +77,13 @@ function checkCollisions() {
     for (let i = gameState.powerUps.length - 1; i >= 0; i--) {
         const powerUp = gameState.powerUps[i];
         if (isColliding(gameState.player, powerUp)) {
-            gameState.powerLevel++;
+            if (powerUp.type === 'health') {
+                // HP回复道具：回复50点血量
+                gameState.player.health = Math.min(gameState.player.maxHealth, gameState.player.health + 50);
+            } else {
+                // 火力升级道具
+                gameState.powerLevel++;
+            }
             gameState.powerUps.splice(i, 1);
         }
     }

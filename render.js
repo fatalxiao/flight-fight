@@ -149,34 +149,84 @@ function drawPowerUps() {
         const y = powerUp.y + powerUp.height / 2;
         const size = powerUp.width / 2;
         
-        // 绘制星星形状的道具
-        gameState.ctx.fillStyle = '#ffff00';
-        gameState.ctx.beginPath();
-        for (let i = 0; i < 5; i++) {
-            const angle = (i * 2 * Math.PI) / 5 - Math.PI / 2;
-            const outerX = x + Math.cos(angle) * size;
-            const outerY = y + Math.sin(angle) * size;
-            
-            if (i === 0) {
-                gameState.ctx.moveTo(outerX, outerY);
-            } else {
-                gameState.ctx.lineTo(outerX, outerY);
-            }
-            
-            const innerAngle = angle + Math.PI / 5;
-            const innerX = x + Math.cos(innerAngle) * (size * 0.5);
-            const innerY = y + Math.sin(innerAngle) * (size * 0.5);
-            gameState.ctx.lineTo(innerX, innerY);
+        if (powerUp.type === 'health') {
+            // 绘制心形HP回复道具
+            drawHeart(x, y, size);
+        } else {
+            // 绘制星星形状的火力升级道具
+            drawStar(x, y, size);
         }
-        gameState.ctx.closePath();
-        gameState.ctx.fill();
-        
-        // 添加发光效果
-        gameState.ctx.shadowColor = '#ffff00';
-        gameState.ctx.shadowBlur = 10;
-        gameState.ctx.fill();
-        gameState.ctx.shadowBlur = 0;
     });
+}
+
+function drawHeart(x, y, size) {
+    gameState.ctx.fillStyle = '#ff6b9d'; // 粉色心形
+    gameState.ctx.beginPath();
+    
+    // 绘制心形路径
+    const topCurveHeight = size * 0.3;
+    gameState.ctx.moveTo(x, y + topCurveHeight);
+    
+    // 左半边心形
+    gameState.ctx.bezierCurveTo(
+        x, y - topCurveHeight,
+        x - size, y - topCurveHeight,
+        x - size, y + size * 0.3
+    );
+    gameState.ctx.bezierCurveTo(
+        x - size, y + size * 0.8,
+        x, y + size,
+        x, y + size
+    );
+    
+    // 右半边心形
+    gameState.ctx.bezierCurveTo(
+        x, y + size,
+        x + size, y + size * 0.8,
+        x + size, y + size * 0.3
+    );
+    gameState.ctx.bezierCurveTo(
+        x + size, y - topCurveHeight,
+        x, y - topCurveHeight,
+        x, y + topCurveHeight
+    );
+    
+    gameState.ctx.fill();
+    
+    // 添加发光效果
+    gameState.ctx.shadowColor = '#ff6b9d';
+    gameState.ctx.shadowBlur = 10;
+    gameState.ctx.fill();
+    gameState.ctx.shadowBlur = 0;
+}
+
+function drawStar(x, y, size) {
+    gameState.ctx.fillStyle = '#ffff00'; // 黄色星星
+    gameState.ctx.beginPath();
+    for (let i = 0; i < 5; i++) {
+        const angle = (i * 2 * Math.PI) / 5 - Math.PI / 2;
+        const outerX = x + Math.cos(angle) * size;
+        const outerY = y + Math.sin(angle) * size;
+        
+        if (i === 0) {
+            gameState.ctx.moveTo(outerX, outerY);
+        } else {
+            gameState.ctx.lineTo(outerX, outerY);
+        }
+        
+        const innerAngle = angle + Math.PI / 5;
+        const innerX = x + Math.cos(innerAngle) * (size * 0.5);
+        const innerY = y + Math.sin(innerAngle) * (size * 0.5);
+        gameState.ctx.lineTo(innerX, innerY);
+    }
+    gameState.ctx.closePath();
+    gameState.ctx.fill();
+    
+    // 添加发光效果
+    gameState.ctx.shadowColor = '#ffff00';
+    gameState.ctx.shadowBlur = 10;
+    gameState.ctx.fill();
+    gameState.ctx.shadowBlur = 0;
 }
 
 function drawHealthBar() {

@@ -225,10 +225,10 @@ function updatePlayer() {
             
             const deadzone = 0.1;
             if (Math.abs(leftStickX) > deadzone) {
-                moveX += leftStickX * gameState.player.speed * 2;
+                moveX += leftStickX * gameState.player.speed * 0.8;
             }
             if (Math.abs(leftStickY) > deadzone) {
-                moveY += leftStickY * gameState.player.speed * 2;
+                moveY += leftStickY * gameState.player.speed * 0.8;
             }
             
             // 十字键控制
